@@ -56,3 +56,5 @@ Purpur-API
 Purpur-MojangAPI
 Purpur-Server
 *.jar
+
+./build.sh
