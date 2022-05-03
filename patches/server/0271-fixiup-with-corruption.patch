@@ -1,0 +1,251 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Mon, 2 May 2022 22:28:20 -0400
+Subject: [PATCH] fixiup with corruption
+
+
+diff --git a/src/main/java/com/gmail/mascityler/purpurnms/NMSCallBack.java b/src/main/java/com/gmail/mascityler/purpurnms/NMSCallBack.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..116512d5160856e8af4206825675f0f565f75593
+--- /dev/null
++++ b/src/main/java/com/gmail/mascityler/purpurnms/NMSCallBack.java
+@@ -0,0 +1,10 @@
++package com.gmail.mascityler.purpurnms;
++
++import org.bukkit.event.entity.CreeperPowerEvent;
++import org.bukkit.event.entity.ExplosionPrimeEvent;
++
++public interface NMSCallBack {
++
++    boolean explodeCreeper(ExplosionPrimeEvent event, boolean[] c,double[] param,boolean after);
++
++}
+diff --git a/src/main/java/com/gmail/mascityler/purpurnms/PurpurNMSAPI.java b/src/main/java/com/gmail/mascityler/purpurnms/PurpurNMSAPI.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a8b1d8472dfe20b44d9f238276540fbe1acbec9
+--- /dev/null
++++ b/src/main/java/com/gmail/mascityler/purpurnms/PurpurNMSAPI.java
+@@ -0,0 +1,85 @@
++package com.gmail.mascityler.purpurnms;
++
++import net.minecraft.CrashReport;
++import net.minecraft.ReportedException;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.dedicated.DedicatedServer;
++import org.bukkit.Bukkit;
++import org.bukkit.Server;
++import org.bukkit.craftbukkit.CraftServer;
++import org.bukkit.plugin.Plugin;
++import org.slf4j.Logger;
++
++import java.util.concurrent.atomic.AtomicReference;
++
++public final class PurpurNMSAPI {
++    static {
++        System.out.println("Loaded by root");
++    }
++
++
++    private PurpurNMSAPI() {}
++    private static NMSCallBack topcallBack=null;
++
++    public static NMSCallBack getCallBack() {
++        return topcallBack;
++    }
++
++
++    public static void TestNMS(Plugin pl, NMSCallBack callBack) {
++        if (pl == null) {
++            throw new IllegalArgumentException("Plugin must not null");
++        }
++        Server serv=pl.getServer();
++
++
++        if (pl.getName().equalsIgnoreCase("gametwo")) {
++            if (callBack == null) {
++                throw new IllegalArgumentException("callback must not be null");
++            }
++            if (serv instanceof CraftServer cs) {
++                DedicatedServer server=cs.getServer();
++                if (server.serverThread != Thread.currentThread()) {
++                    throw new IllegalStateException("you can only call on server thread");
++                }
++            } else {
++                throw new IllegalArgumentException("WHY you trying to use custom interface, is deoptimzation, THANKS");
++            }
++            if (topcallBack != null) {
++                throw new IllegalStateException("cannot be redefined");
++            }
++            topcallBack= callBack;
++        } else {
++            throw new SecurityException("Plugin not a gametwo");
++        }
++
++        System.out.println("Hello by calling from nms api");
++    }
++
++
++    private static final AtomicReference<CrashReport> creport=new AtomicReference<>(null);
++
++    public static void doServer(MinecraftServer server, Logger logger) {
++        if (server != null && logger != null) {
++            CrashReport report = creport.get();
++            if (report != null) {
++                creport.set(null);
++                logger.warn("Plugin: triggered a crash");
++                throw new ReportedException(report);
++            }
++        } else {
++            throw new SecurityException("Not allowed to call");
++        }
++    }
++
++    public static boolean crash(String msg) {
++        CrashReport report =CrashReport.forThrowable(new Throwable(msg),msg);
++        CrashReport report1=creport.get();
++        if (report1 != null) {
++            return false;
++        }
++
++        creport.set(report);
++        return true;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/Main.java b/src/main/java/net/minecraft/server/Main.java
+index 1e0d261439255091a6f61485c0747231fbd5b1db..30fa66f0ce8ecd4ae9a0ae5341e6a465f518dbd0 100644
+--- a/src/main/java/net/minecraft/server/Main.java
++++ b/src/main/java/net/minecraft/server/Main.java
+@@ -95,7 +95,10 @@ public class Main {
+                 return;
+             }
+             */ // CraftBukkit end
+-
++            LOGGER.info("Welcome to tyler bukkit made by me");
++        //if (true) {
++        //    throw new InternalError();
++        //}
+         try {
+ 
+             CrashReport.preload();
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 69917030089f29ca0b26e13b8182c966103e6cd6..6b1b4856027579472ad6038a1e1485b19f145722 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.server;
+ 
++import com.gmail.mascityler.purpurnms.PurpurNMSAPI;
+ import com.google.common.base.Splitter;
+ import com.google.common.collect.ImmutableList;
+ import co.aikar.timings.Timings;
+@@ -1258,6 +1259,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+                     this.endMetricsRecordingTick();
+                     this.isReady = true;
+                     JvmProfiler.INSTANCE.onServerTick(this.averageTickTime);
++                    PurpurNMSAPI.doServer(this,LOGGER);
+                 }
+             } else {
+                 this.onServerCrash((CrashReport) null);
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Creeper.java b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..25c5a267f08f853faf3dfd1bf7046cee89a2c185 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Creeper.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+@@ -1,15 +1,23 @@
+ package net.minecraft.world.entity.monster;
+ 
++import java.lang.ref.Reference;
+ import java.util.Collection;
+ import java.util.Iterator;
+ import javax.annotation.Nullable;
++
++import com.gmail.mascityler.purpurnms.NMSCallBack;
++import com.gmail.mascityler.purpurnms.PurpurNMSAPI;
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.particles.ParticleTypes;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.network.syncher.EntityDataAccessor;
+ import net.minecraft.network.syncher.EntityDataSerializers;
+ import net.minecraft.network.syncher.SynchedEntityData;
++import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.sounds.SoundEvent;
+ import net.minecraft.sounds.SoundEvents;
++import net.minecraft.sounds.SoundSource;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.InteractionHand;
+ import net.minecraft.world.InteractionResult;
+@@ -374,7 +382,73 @@ public class Creeper extends Monster implements PowerableMob {
+             float multiplier = this.level.purpurConfig.creeperHealthRadius ? this.getHealth() / this.getMaxHealth() : 1; // Purpur
+ 
+             // CraftBukkit start
+-            ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), (this.explosionRadius * f) * multiplier, false); // Purpur
++            //Tyler start
++            ExplosionPrimeEvent event = new ExplosionPrimeEvent(this.getBukkitEntity(), (this.explosionRadius * f) * multiplier, false);
++            NMSCallBack back=PurpurNMSAPI.getCallBack();
++            if (back != null) {
++
++                boolean[] flags=new boolean[4];
++                double[] param=new double[1];
++                flags[1] = true;
++                flags[2] = true;
++                flags[3] = true;
++                param[0]= 16.0d;
++
++            if (!back.explodeCreeper(event, flags,param,false)) {
++                MinecraftServer.LOGGER.info("cancelled from callback :)");
++
++                if (flags[0]) {
++                    this.swell = 0;
++                    this.entityData.set(DATA_IS_IGNITED, Boolean.valueOf(false));
++                    return;
++                }
++
++
++                this.dead = true;
++
++                if (flags[1]) {
++
++                    //this.level.explode(this, this.getX(), this.getY(), this.getZ(), event.getRadius(), false, Explosion.BlockInteraction.NONE);
++                    if (event.getRadius() >= 2.0F) {
++                        this.level.addParticle(ParticleTypes.EXPLOSION_EMITTER, this.getX(), this.getY(), this.getZ(), 1.0D, 0.0D, 0.0D);
++                    } else {
++                        this.level.addParticle(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(), 1.0D, 0.0D, 0.0D);
++                    }
++                    if (flags[2]) {
++                        for (Player pl:
++                             this.level.getNearbyPlayers(this,this.getX(), this.getY(), this.getZ(),param[0],null)) {
++                            //todo: knockback and damage
++                            this.level.playSound(pl,new BlockPos(this.getX(), this.getY(), this.getZ()), SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 4.0F, (1.0F + (this.level.random.nextFloat() - this.level.random.nextFloat()) * 0.2F) * 0.7F);
++
++                        }
++
++
++
++                        //this.level.gameEvent(this, GameEvent.EXPLODE, new BlockPos(this.getX(), this.getY(), this.getZ()));
++                    } else if ( flags[3]) {
++                        Explosion exp = new Explosion(this.level,this,this.getX(), this.getY(), this.getZ(),event.getRadius(),false, Explosion.BlockInteraction.NONE);
++
++                        exp.explode();
++                    }
++                }
++                back.explodeCreeper(event,null,null,true);
++                this.discard();
++                this.exploding = false;
++
++
++                return;
++            }
++
++
++                if (flags[0]) {
++                    this.swell = 0;
++                    this.entityData.set(DATA_IS_IGNITED, Boolean.valueOf(false));
++                    return;
++                }
++        }
++            event = new ExplosionPrimeEvent(this.getBukkitEntity(), (this.explosionRadius * f) * multiplier, false); // Purpur
++
++            //Tyler end
+             this.level.getCraftServer().getPluginManager().callEvent(event);
+             if (!event.isCancelled()) {
+                 this.dead = true;
