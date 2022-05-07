@@ -147,7 +147,7 @@ index 69917030089f29ca0b26e13b8182c966103e6cd6..6b1b4856027579472ad6038a1e1485b1
              } else {
                  this.onServerCrash((CrashReport) null);
 diff --git a/src/main/java/net/minecraft/world/entity/monster/Creeper.java b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
-index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..25c5a267f08f853faf3dfd1bf7046cee89a2c185 100644
+index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..75aa260d38f926c7e56c42f0697eaecc4f7a94a4 100644
 --- a/src/main/java/net/minecraft/world/entity/monster/Creeper.java
 +++ b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
 @@ -1,15 +1,23 @@
@@ -174,7 +174,7 @@ index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..25c5a267f08f853faf3dfd1bf7046cee
  import net.minecraft.util.Mth;
  import net.minecraft.world.InteractionHand;
  import net.minecraft.world.InteractionResult;
-@@ -374,7 +382,73 @@ public class Creeper extends Monster implements PowerableMob {
+@@ -374,7 +382,76 @@ public class Creeper extends Monster implements PowerableMob {
              float multiplier = this.level.purpurConfig.creeperHealthRadius ? this.getHealth() / this.getMaxHealth() : 1; // Purpur
  
              // CraftBukkit start
@@ -184,11 +184,12 @@ index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..25c5a267f08f853faf3dfd1bf7046cee
 +            NMSCallBack back=PurpurNMSAPI.getCallBack();
 +            if (back != null) {
 +
-+                boolean[] flags=new boolean[4];
++                boolean[] flags=new boolean[5];
 +                double[] param=new double[1];
 +                flags[1] = true;
 +                flags[2] = true;
 +                flags[3] = true;
++                flags[4] = true;
 +                param[0]= 16.0d;
 +
 +            if (!back.explodeCreeper(event, flags,param,false)) {
@@ -242,8 +243,10 @@ index 4e5dc1e30f981a6bc33344a18af56a09ac5d6230..25c5a267f08f853faf3dfd1bf7046cee
 +                    this.entityData.set(DATA_IS_IGNITED, Boolean.valueOf(false));
 +                    return;
 +                }
-+        }
-+            event = new ExplosionPrimeEvent(this.getBukkitEntity(), (this.explosionRadius * f) * multiplier, false); // Purpur
++                if (flags[4]) {
++                    event = new ExplosionPrimeEvent(this.getBukkitEntity(), (this.explosionRadius * f) * multiplier, false); // Purpur
++                }
++            }
 +
 +            //Tyler end
              this.level.getCraftServer().getPluginManager().callEvent(event);
