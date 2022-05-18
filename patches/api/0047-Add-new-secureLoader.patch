@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Thu, 12 May 2022 21:20:51 -0400
+Subject: [PATCH] Add new secureLoader
+
+
+diff --git a/src/main/java/org/bukkit/plugin/java/JavaPlugin.java b/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
+index c943bd801b54519ba6cf5d45aec593d7b7438f99..d2f9ca2d9ce486019210acd83f9726d9d79500a5 100644
+--- a/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
++++ b/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
+@@ -433,4 +433,21 @@ public abstract class JavaPlugin extends PluginBase {
+         }
+         return plugin;
+     }
++
++    //Tyler - Begin
++
++    private boolean isSecureLoaded=false;
++
++    public final boolean isSecureLoaded() {
++        return this.isSecureLoaded;
++    }
++
++public abstract void cdHash();
++    final void setSecure() {
++        if (isSecureLoaded) {
++            throw new IllegalStateException("Already on secure load");
++        }
++        isSecureLoaded=true;
++    }
++    //Tyler - End
+ }
+diff --git a/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java b/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
+index dc76cdbe93a0229a8ff552e4048613e3d8e050ce..5c5c466721513f22522b38a7d80ab21a186371ad 100644
+--- a/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
++++ b/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
+@@ -20,9 +20,7 @@ import java.util.jar.JarFile;
+ import java.util.jar.Manifest;
+ import java.util.logging.Level;
+ import org.apache.commons.lang.Validate;
+-import org.bukkit.plugin.InvalidPluginException;
+-import org.bukkit.plugin.PluginDescriptionFile;
+-import org.bukkit.plugin.SimplePluginManager;
++import org.bukkit.plugin.*;
+ import org.jetbrains.annotations.NotNull;
+ import org.jetbrains.annotations.Nullable;
+ 
+@@ -53,9 +51,10 @@ public final class PluginClassLoader extends URLClassLoader { // Spigot
+     }
+ 
+     PluginClassLoader(@NotNull final JavaPluginLoader loader, @Nullable final ClassLoader parent, @NotNull final PluginDescriptionFile description, @NotNull final File dataFolder, @NotNull final File file, @Nullable ClassLoader libraryLoader) throws IOException, InvalidPluginException, MalformedURLException {
++
+         super(file.getName(), new URL[] {file.toURI().toURL()}, parent); // Paper - rewrite LogEvents to contain source jar info
+         Validate.notNull(loader, "Loader cannot be null");
+-
++        //JavaPlugin plugin1;
+         this.loader = loader;
+         this.description = description;
+         this.dataFolder = dataFolder;
+@@ -82,12 +81,46 @@ public final class PluginClassLoader extends URLClassLoader { // Spigot
+                 throw new InvalidPluginException("main class `" + description.getMain() + "' does not extend JavaPlugin", ex);
+             }
+ 
+-            plugin = pluginClass.newInstance();
++            //Tyler - Begin
++            //JavaPlugin plugin1;
++
++                Object obj=null;
++            try {
++                       obj= pluginClass.getDeclaredMethod("getInstance").invoke(null);
++            } catch (Exception ex) {
++                logger.warning("No secure pl: " + description.getName());
++                ex.printStackTrace();
++            }
++
++            if (obj != null) {
++                    if (obj instanceof JavaPlugin pl) {
++                        //todo check sign challenge
++                        plugin = pl;
++                        plugin.cdHash();
++                        pl.setSecure();
++                        logger.info("Securely load OK: " + description.getName());
++
++                        return;
++                    } else {
++                        //throw new InvalidPluginException("main class `" + description.getMain() + "' does not extend JavaPlugin, load securely");
++                        logger.info("Securely load inst class mismatch, fallback: " + description.getName());
++                    }
++                } else {
++                    logger.info("Securely load inst ret null or ex is thrown, fallback: " + description.getName());
++                }
++
++
++
++            // Tyler - End
++            plugin=pluginClass.newInstance();
++           // plugin.cdHash(); // Tyler - I just troll
++
+         } catch (IllegalAccessException ex) {
+             throw new InvalidPluginException("No public constructor", ex);
+         } catch (InstantiationException ex) {
+             throw new InvalidPluginException("Abnormal plugin type", ex);
+         }
++
+     }
+ 
+     @Override

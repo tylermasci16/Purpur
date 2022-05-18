@@ -45,7 +45,7 @@ index 9521971e9e597834e785b36d1657064dc1621b9b..655f4d84a9522b7af5f3fd234d879775
      standardInput = System.`in`
      workingDir = rootProject.layout.projectDirectory
 diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
-index bf42969859545a8a520923ef1836ffa4a5cc24a0..fba5dbdb7bcbb55400ef18342c9b54612972a718 100644
+index ece77f5ea4b14bbed7c070131b3251ea86764538..fba5dbdb7bcbb55400ef18342c9b54612972a718 100644
 --- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 +++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 @@ -19,8 +19,10 @@ import java.util.stream.StreamSupport;
@@ -116,7 +116,7 @@ index bf42969859545a8a520923ef1836ffa4a5cc24a0..fba5dbdb7bcbb55400ef18342c9b5461
          if (siteApiVersion == null) { return -1; }
          try {
              try (BufferedReader reader = Resources.asCharSource(
--                new URL("https://api.papermc.io/v2/projects/paper/versions/" + siteApiVersion),
+-                new URL("https://papermc.io/api/v2/projects/paper/versions/" + siteApiVersion),
 +                new URL("https://api.purpurmc.org/v2/purpur/" + siteApiVersion), // Purpur
                  Charsets.UTF_8
              ).openBufferedStream()) {
