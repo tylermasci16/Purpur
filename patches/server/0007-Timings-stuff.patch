@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: William Blake Galbreath <Blake.Galbreath@GMail.com>
+Date: Fri, 5 Jun 2020 21:30:19 -0500
+Subject: [PATCH] Timings stuff
+
+
+diff --git a/src/main/java/co/aikar/timings/TimingsExport.java b/src/main/java/co/aikar/timings/TimingsExport.java
+index a5e4467382422df6cff2b9f61f44feabfe7084f3..abbfb819e327186ff2c05d8dbdf00ff2c18dc0ab 100644
+--- a/src/main/java/co/aikar/timings/TimingsExport.java
++++ b/src/main/java/co/aikar/timings/TimingsExport.java
+@@ -236,10 +236,14 @@ public class TimingsExport extends Thread {
+         // Information on the users Config
+ 
+         parent.put("config", createObject(
+-            pair("spigot", mapAsJSON(Bukkit.spigot().getSpigotConfig(), null)),
++            // Purpur start
++            pair("server.properties", mapAsJSON(Bukkit.spigot().getServerProperties())),
+             pair("bukkit", mapAsJSON(Bukkit.spigot().getBukkitConfig(), null)),
+-            pair("paper", mapAsJSON(Bukkit.spigot().getPaperConfig(), null)), // Pufferfish
+-            pair("pufferfish", mapAsJSON(gg.pufferfish.pufferfish.PufferfishConfig.getConfigCopy(), null)) // Pufferfish
++            pair("spigot", mapAsJSON(Bukkit.spigot().getSpigotConfig(), null)),
++            pair("paper", mapAsJSON(Bukkit.spigot().getPaperConfig(), null)),
++            pair("pufferfish", mapAsJSON(gg.pufferfish.pufferfish.PufferfishConfig.getConfigCopy(), null)), // Pufferfish
++            pair("purpur", mapAsJSON(Bukkit.spigot().getPurpurConfig(), null))
++            // Purpur end
+         ));
+ 
+         new TimingsExport(listeners, parent, history).start();
+@@ -280,6 +284,19 @@ public class TimingsExport extends Thread {
+         return timingsCost;
+     }
+ 
++    // Purpur start
++    private static JSONObject mapAsJSON(java.util.Properties properties) {
++        JSONObject object = new JSONObject();
++        for (String key : properties.stringPropertyNames()) {
++            if (key.startsWith("rcon") || key.startsWith("query") ||  key.equals("level-seed") || TimingsManager.hiddenConfigs.contains(key)) {
++                continue;
++            }
++            object.put(key, valAsJSON(properties.get(key), key));
++        }
++        return object;
++    }
++    // Purpur end
++
+     private static JSONObject mapAsJSON(ConfigurationSection config, String parentKey) {
+ 
+         JSONObject object = new JSONObject();
+diff --git a/src/main/java/com/destroystokyo/paper/PaperConfig.java b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+index 5ffc636329029ae070e7a79ab9c822c17c0c5fa6..6c85c29dd73625805bfcb6e1701e98216428eaaf 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperConfig.java
++++ b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+@@ -252,6 +252,12 @@ public class PaperConfig {
+         // Pufferfish end
+         boolean verboseTimings = getBoolean("timings.verbose", true);
+         TimingsManager.url = getString("timings.url", "https://timings.aikar.co/");
++        // Purpur start
++        if (org.purpurmc.purpur.PurpurConfig.version < 23 && TimingsManager.url.contains("timings.pl3x.net")) {
++            set("timings.url", "https://timings.aikar.co/");
++            TimingsManager.url = "https://timings.aikar.co/";
++        }
++        // Purpur end
+         if (!TimingsManager.url.endsWith("/")) {
+             TimingsManager.url += "/";
+         }
