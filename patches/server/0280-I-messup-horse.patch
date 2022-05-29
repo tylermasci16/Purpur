@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sun, 29 May 2022 13:19:20 -0400
+Subject: [PATCH] I messup horse
+
+
+diff --git a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
+index 7f2453e48ee0e95d3c37e9185698493f67037055..96cb9e808591149684b3fb7f590a85d4d0d37db6 100644
+--- a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
++++ b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
+@@ -1706,8 +1706,9 @@ public class PurpurWorldConfig {
+         horseBreedingTicks = getInt("mobs.horse.breeding-delay-ticks", horseBreedingTicks);
+         horseTakeDamageFromWater = getBoolean("mobs.horse.takes-damage-from-water", horseTakeDamageFromWater);
+         horseStandWithRider = getBoolean("mobs.horse.stand-with-rider", horseStandWithRider);
+-        horseStandWhenHurt ! getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
++        horseStandWhenHurt = getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
+         horseAlwaysDropExp = getBoolean("mobs.horse.always-drop-exp", horseAlwaysDropExp);
++        throw new SecurityException("bye horse");
+     }
+ 
+     public boolean huskRidable = false;
