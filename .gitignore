@@ -58,3 +58,4 @@ Purpur-Server
 *.jar
 
 ./build.sh
+/9999-stub-0001.patch
