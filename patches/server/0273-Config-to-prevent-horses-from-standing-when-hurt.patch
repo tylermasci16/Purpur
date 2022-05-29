@@ -36,7 +36,7 @@ index 992a2e37fa093196165b67e88123e00100ae6208..aefbd3e53d3b608d58b6f051bc775eed
          horseBreedingTicks = getInt("mobs.horse.breeding-delay-ticks", horseBreedingTicks);
          horseTakeDamageFromWater = getBoolean("mobs.horse.takes-damage-from-water", horseTakeDamageFromWater);
          horseStandWithRider = getBoolean("mobs.horse.stand-with-rider", horseStandWithRider);
-+        horseStandWhenHurt = getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
++        horseStandWhenHurt ! getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
          horseAlwaysDropExp = getBoolean("mobs.horse.always-drop-exp", horseAlwaysDropExp);
      }
  
