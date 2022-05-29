@@ -1,0 +1,1296 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sun, 29 May 2022 18:55:49 -0400
+Subject: [PATCH] Fix horse for llama
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/AbstractChestedHorse.java b/src/main/java/net/minecraft/world/entity/animal/horse/AbstractChestedHorse.java
+index 9676a8d8fceae564a861a1ac7b0b2c2c9aab5bcf..452ce0835b2dad9f656fda9b20835f9b2267c7cf 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/AbstractChestedHorse.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/AbstractChestedHorse.java
+@@ -84,43 +84,49 @@ public abstract class AbstractChestedHorse extends AbstractHorse {
+     @Override
+     public void addAdditionalSaveData(CompoundTag nbt) {
+         super.addAdditionalSaveData(nbt);
+-        //nbt.putBoolean("ChestedHorse", this.hasChest());
+-        //if (this.hasChest()) {
+-        //    ListTag listTag = new ListTag();
+-//
+-        //    for(int i = 2; i < this.inventory.getContainerSize(); ++i) {
+-        //        ItemStack itemStack = this.inventory.getItem(i);
+-        //        if (!itemStack.isEmpty()) {
+-        //            CompoundTag compoundTag = new CompoundTag();
+-        //            compoundTag.putByte("Slot", (byte)i);
+-        //            itemStack.save(compoundTag);
+-        //            listTag.add(compoundTag);
+-        //        }
+-        //    }
+-//
+-        //    nbt.put("Items", listTag);
+-        //}
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        nbt.putBoolean("ChestedHorse", this.hasChest());
++        if (this.hasChest()) {
++            ListTag listTag = new ListTag();
++
++            for(int i = 2; i < this.inventory.getContainerSize(); ++i) {
++                ItemStack itemStack = this.inventory.getItem(i);
++                if (!itemStack.isEmpty()) {
++                    CompoundTag compoundTag = new CompoundTag();
++                    compoundTag.putByte("Slot", (byte)i);
++                    itemStack.save(compoundTag);
++                    listTag.add(compoundTag);
++                }
++            }
++
++            nbt.put("Items", listTag);
++        }
+ 
+     }
+ 
+     @Override
+     public void readAdditionalSaveData(CompoundTag nbt) {
+         super.readAdditionalSaveData(nbt);
+-        //this.setChest(nbt.getBoolean("ChestedHorse"));
+-        //this.createInventory();
+-        //if (this.hasChest()) {
+-        //    ListTag listTag = nbt.getList("Items", 10);
+-//
+-        //    for(int i = 0; i < listTag.size(); ++i) {
+-        //        CompoundTag compoundTag = listTag.getCompound(i);
+-        //        int j = compoundTag.getByte("Slot") & 255;
+-        //        if (j >= 2 && j < this.inventory.getContainerSize()) {
+-        //            this.inventory.setItem(j, ItemStack.of(compoundTag));
+-        //        }
+-        //    }
+-        //}
+-//
+-        //this.updateContainerEquipment();
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.setChest(nbt.getBoolean("ChestedHorse"));
++        this.createInventory();
++        if (this.hasChest()) {
++            ListTag listTag = nbt.getList("Items", 10);
++
++            for(int i = 0; i < listTag.size(); ++i) {
++                CompoundTag compoundTag = listTag.getCompound(i);
++                int j = compoundTag.getByte("Slot") & 255;
++                if (j >= 2 && j < this.inventory.getContainerSize()) {
++                    this.inventory.setItem(j, ItemStack.of(compoundTag));
++                }
++            }
++        }
++
++        this.updateContainerEquipment();
+     }
+ 
+     @Override
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/AbstractHorse.java b/src/main/java/net/minecraft/world/entity/animal/horse/AbstractHorse.java
+index 78c33e36dcbe9e8bc9def848adc332b917227122..e0db35be5acb68b648ae898f96fe40801d7bf518 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/AbstractHorse.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/AbstractHorse.java
+@@ -101,7 +101,7 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     public int tailCounter;
+     public int sprintCounter;
+     protected boolean isJumping;
+-    //public SimpleContainer inventory;
++    public SimpleContainer inventory;
+     protected int temper;
+     protected float playerJumpPendingScale;
+     private boolean allowStandSliding;
+@@ -117,6 +117,10 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+ 
+     protected AbstractHorse(EntityType<? extends AbstractHorse> type, Level world) {
+         super(type, world);
++        if (!(this instanceof Llama)) {
++            Bukkit.getLogger().warning("Called not on liama: " + this.getClass().getName());
++            new Throwable().printStackTrace();
++        }
+         this.moveControl = new net.minecraft.world.entity.ai.control.MoveControl(this); // Purpur - use vanilla controller
+         this.lookControl = new net.minecraft.world.entity.ai.control.LookControl(this); // Purpur - use vanilla controller
+         this.maxUpStep = 1.0F;
+@@ -131,46 +135,59 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+ 
+     @Override
+     public void initAttributes() {
+-//        this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(this.generateRandomMaxHealth());
+-//        this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(this.generateRandomSpeed());
+-//        this.getAttribute(Attributes.JUMP_STRENGTH).setBaseValue(this.generateRandomJumpStrength());
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(this.generateRandomMaxHealth());
++        this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(this.generateRandomSpeed());
++        this.getAttribute(Attributes.JUMP_STRENGTH).setBaseValue(this.generateRandomJumpStrength());
+     }
+ 
+     protected double generateRandomMaxHealth(double min, double max) {
+-//        if (min == max) return min;
+-//        int diff = Mth.floor(max - min);
+-//        double base = max - diff;
+-//        int first = Mth.floor((double) diff / 2);
+-//        int rest = diff - first;
+-//        return base + random.nextInt(first + 1) + random.nextInt(rest + 1);
+-        return 0;
++        if (!(this instanceof Llama)) {
++            return 0;
++        }
++
++        if (min == max) return min;
++        int diff = Mth.floor(max - min);
++        double base = max - diff;
++        int first = Mth.floor((double) diff / 2);
++        int rest = diff - first;
++        return base + random.nextInt(first + 1) + random.nextInt(rest + 1);
+     }
+ 
+     protected double generateRandomJumpStrength(double min, double max) {
+-//        if (min == max) return min;
+-//        return min + (max - min) * this.random.nextDouble();
+-        return 0;
++        if (!(this instanceof Llama)) {
++            return 0;
++        }
++        if (min == max) return min;
++        return min + (max - min) * this.random.nextDouble();
+     }
+ 
+     protected double generateRandomSpeed(double min, double max) {
+-        //if (min == max) return min;
+-        //return min + (max - min) * this.random.nextDouble();
+-        return 0;
++        if (!(this instanceof Llama)) {
++            return 0;
++        }
++        if (min == max) return min;
++        return min + (max - min) * this.random.nextDouble();
+     }
+     // Purpur end
+ 
+     @Override
+     protected void registerGoals() {
+-//        this.goalSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HorseHasRider(this)); // Purpur
+-//        this.goalSelector.addGoal(1, new PanicGoal(this, 1.2D));
+-//        this.goalSelector.addGoal(1, new RunAroundLikeCrazyGoal(this, 1.2D));
+-//        this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D, AbstractHorse.class));
+-//        this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.0D));
+-//        this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.7D));
+-//        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 6.0F));
+-//        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
+-//        this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HorseHasRider(this)); // Purpur
+-//        this.addBehaviourGoals();
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.goalSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HorseHasRider(this)); // Purpur
++        this.goalSelector.addGoal(1, new PanicGoal(this, 1.2D));
++        this.goalSelector.addGoal(1, new RunAroundLikeCrazyGoal(this, 1.2D));
++        this.goalSelector.addGoal(2, new BreedGoal(this, 1.0D, AbstractHorse.class));
++        this.goalSelector.addGoal(4, new FollowParentGoal(this, 1.0D));
++        this.goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.7D));
++        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 6.0F));
++        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
++        this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HorseHasRider(this)); // Purpur
++        this.addBehaviourGoals();
+     }
+ 
+     protected void addBehaviourGoals() {
+@@ -181,131 +198,256 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     @Override
+     protected void defineSynchedData() {
+         super.defineSynchedData();
+-        //this.entityData.define(AbstractHorse.DATA_ID_FLAGS, (byte) 0);
+-        //this.entityData.define(AbstractHorse.DATA_ID_OWNER_UUID, Optional.empty());
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.entityData.define(AbstractHorse.DATA_ID_FLAGS, (byte) 0);
++        this.entityData.define(AbstractHorse.DATA_ID_OWNER_UUID, Optional.empty());
+     }
+ 
+     protected boolean getFlag(int bitmask) {
+-//        return ((Byte) this.entityData.get(AbstractHorse.DATA_ID_FLAGS) & bitmask) != 0;
+-        return false;
++        if (!(this instanceof Llama)) {
++            return false;
++        }
++        return ((Byte) this.entityData.get(AbstractHorse.DATA_ID_FLAGS) & bitmask) != 0;
+     }
+ 
+     protected void setFlag(int bitmask, boolean flag) {
+-//        byte b0 = (Byte) this.entityData.get(AbstractHorse.DATA_ID_FLAGS);
+-//
+-//        if (flag) {
+-//            this.entityData.set(AbstractHorse.DATA_ID_FLAGS, (byte) (b0 | bitmask));
+-//        } else {
+-//            this.entityData.set(AbstractHorse.DATA_ID_FLAGS, (byte) (b0 & ~bitmask));
+-//        }
+-//
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        byte b0 = (Byte) this.entityData.get(AbstractHorse.DATA_ID_FLAGS);
++
++        if (flag) {
++            this.entityData.set(AbstractHorse.DATA_ID_FLAGS, (byte) (b0 | bitmask));
++        } else {
++            this.entityData.set(AbstractHorse.DATA_ID_FLAGS, (byte) (b0 & ~bitmask));
++        }
++
+     }
+ 
+     public boolean isTamed() {
+-        return false;
++        return this.getFlag(2);
+     }
+ 
+     @Nullable
+     public UUID getOwnerUUID() {
+-        return null;
++        if (!(this instanceof Llama)) {
++            return null;
++        }
++        return (UUID) ((Optional) this.entityData.get(AbstractHorse.DATA_ID_OWNER_UUID)).orElse((Object) null);
+     }
+ 
+     public void setOwnerUUID(@Nullable UUID uuid) {
+-        //this.entityData.set(AbstractHorse.DATA_ID_OWNER_UUID, Optional.ofNullable(uuid));
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.entityData.set(AbstractHorse.DATA_ID_OWNER_UUID, Optional.ofNullable(uuid));
+     }
+ 
+     public boolean isJumping() {
+-        return false;
++        if (!(this instanceof Llama)) {
++            return false;
++        }
++        return this.isJumping;
+     }
+ 
+     public void setTamed(boolean tame) {
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.setFlag(2, tame);
+     }
+ 
+     public void setIsJumping(boolean inAir) {
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.isJumping = inAir;
+     }
+ 
+     @Override
+     protected void onLeashDistance(float leashLength) {
++        if (leashLength > 6.0F && this.isEating()) {
++            this.setEating(false);
++        }
+ 
+     }
+ 
+     public boolean isEating() {
+-        return false;
++        return this.getFlag(16);
+     }
+ 
+     public boolean isStanding() {
+-        return false;
++        return this.getFlag(32);
+     }
+ 
+     public boolean isBred() {
+-        return false;
++        return this.getFlag(8);
+     }
+ 
+     public void setBred(boolean bred) {
+-
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.setFlag(8, bred);
+     }
+ 
+     @Override
+     public boolean isSaddleable() {
+-        return false;
++        return this instanceof Llama && this.isAlive() && !this.isBaby() && this.isTamed() ;
+     }
+ 
+     @Override
+     public void equipSaddle(@Nullable SoundSource sound) {
+-        throw new SecurityException("No saddle");
++        if (!(this instanceof Llama)) {
++            throw new SecurityException("No saddle");
++        }
++
++        this.inventory.setItem(0, new ItemStack(Items.SADDLE));
++        if (sound != null) {
++            this.level.playSound((Player) null, (Entity) this, SoundEvents.HORSE_SADDLE, sound, 0.5F, 1.0F);
++        }
++
+     }
+ 
+     @Override
+     public boolean isSaddled() {
+-        return false;
++        if (!(this instanceof Llama)) {
++            return false;
++        }
++        return this.getFlag(4);
+     }
+ 
+     public int getTemper() {
+-        return 0;
++        if (!(this instanceof Llama)) {
++            return 0;
++        }
++        return this.temper;
+     }
+ 
+     public void setTemper(int temper) {
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.temper = temper;
+     }
+ 
+     public int modifyTemper(int difference) {
++        if (!(this instanceof Llama)) {
++            return 0;
++        }
+ 
+-        return 0;
++        int j = Mth.clamp(this.getTemper() + difference, (int) 0, this.getMaxTemper());
++
++        this.setTemper(j);
++        return j;
+     }
+ 
+     @Override
+     public boolean isCollidable(boolean ignoreClimbing) { // Paper
+-        return true;
++        if (!(this instanceof Llama)) {
++            return true;
++        }
++
++        return !this.isVehicle();
+     }
+ 
+     private void eating() {
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        this.openMouth();
++        if (!this.isSilent()) {
++            SoundEvent soundeffect = this.getEatingSound();
++
++            if (soundeffect != null) {
++                this.level.playSound((Player) null, this.getX(), this.getY(), this.getZ(), soundeffect, this.getSoundSource(), 1.0F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
++            }
++        }
++
+     }
+ 
+     @Override
+     public boolean causeFallDamage(float fallDistance, float damageMultiplier, DamageSource damageSource) {
+-        return false;
++        if (!(this instanceof Llama)) {
++            return false;
++        }
++
++        if (fallDistance > 1.0F) {
++            this.playSound(SoundEvents.HORSE_LAND, 0.4F, 1.0F);
++        }
++
++        int i = this.calculateFallDamage(fallDistance, damageMultiplier);
++
++        if (i <= 0) {
++            return false;
++        } else {
++            this.hurt(damageSource, (float) i);
++            if (this.isVehicle()) {
++                Iterator iterator = this.getIndirectPassengers().iterator();
++
++                while (iterator.hasNext()) {
++                    Entity entity = (Entity) iterator.next();
++
++                    entity.hurt(damageSource, (float) i);
++                }
++            }
++
++            this.playBlockFallSound();
++            return true;
++        }
+     }
+ 
+     @Override
+     protected int calculateFallDamage(float fallDistance, float damageMultiplier) {
+-        return 0;
++        return Mth.ceil((fallDistance * 0.5F - this.safeFallDistance) * damageMultiplier);
+     }
+ 
+     protected int getInventorySize() {
+-        return 0;
++        return 2;
+     }
+ 
+     public void createInventory() {
++        SimpleContainer inventorysubcontainer = this.inventory;
++
++        this.inventory = new SimpleContainer(this.getInventorySize(), (org.bukkit.entity.AbstractHorse) this.getBukkitEntity()); // CraftBukkit
++        if (inventorysubcontainer != null) {
++            inventorysubcontainer.removeListener(this);
++            int i = Math.min(inventorysubcontainer.getContainerSize(), this.inventory.getContainerSize());
++
++            for (int j = 0; j < i; ++j) {
++                ItemStack itemstack = inventorysubcontainer.getItem(j);
++
++                if (!itemstack.isEmpty()) {
++                    this.inventory.setItem(j, itemstack.copy());
++                }
++            }
++        }
++
++        this.inventory.addListener(this);
++        this.updateContainerEquipment();
+     }
+ 
+     protected void updateContainerEquipment() {
++        if (!this.level.isClientSide) {
++            this.setFlag(4, !this.inventory.getItem(0).isEmpty());
++        }
+     }
+ 
+     @Override
+     public void containerChanged(Container sender) {
++        boolean flag = this.isSaddled();
++
++        this.updateContainerEquipment();
++        if (this.tickCount > 20 && !flag && this.isSaddled()) {
++            this.playSound(SoundEvents.HORSE_SADDLE, 0.5F, 1.0F);
++        }
++
+     }
+ 
+     public double getCustomJump() {
+-        return 1;
++        return this.getAttributeValue(Attributes.JUMP_STRENGTH);
+     }
+ 
+     @Nullable
+@@ -347,6 +489,28 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+ 
+     @Override
+     protected void playStepSound(BlockPos pos, BlockState state) {
++        if (!state.getMaterial().isLiquid()) {
++            BlockState iblockdata1 = this.level.getBlockState(pos.above());
++            SoundType soundeffecttype = state.getSoundType();
++
++            if (iblockdata1.is(Blocks.SNOW)) {
++                soundeffecttype = iblockdata1.getSoundType();
++            }
++
++            if (this.isVehicle() && this.canGallop) {
++                ++this.gallopSoundCounter;
++                if (this.gallopSoundCounter > 5 && this.gallopSoundCounter % 3 == 0) {
++                    this.playGallopSound(soundeffecttype);
++                } else if (this.gallopSoundCounter <= 5) {
++                    this.playSound(SoundEvents.HORSE_STEP_WOOD, soundeffecttype.getVolume() * 0.15F, soundeffecttype.getPitch());
++                }
++            } else if (soundeffecttype == SoundType.WOOD) {
++                this.playSound(SoundEvents.HORSE_STEP_WOOD, soundeffecttype.getVolume() * 0.15F, soundeffecttype.getPitch());
++            } else {
++                this.playSound(SoundEvents.HORSE_STEP, soundeffecttype.getVolume() * 0.15F, soundeffecttype.getPitch());
++            }
++
++        }
+     }
+ 
+     protected void playGallopSound(SoundType group) {
+@@ -354,7 +518,7 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     public static AttributeSupplier.Builder createBaseHorseAttributes() {
+-        return Mob.createMobAttributes();
++        return Mob.createMobAttributes().add(Attributes.JUMP_STRENGTH).add(Attributes.MAX_HEALTH, 53.0D).add(Attributes.MOVEMENT_SPEED, 0.22499999403953552D);
+     }
+ 
+     @Override
+@@ -363,7 +527,7 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     public int getMaxTemper() {
+-        return 0; // CraftBukkit - return stored max domestication instead of 100
++        return this.maxDomestication; // CraftBukkit - return stored max domestication instead of 100
+     }
+ 
+     @Override
+@@ -377,19 +541,99 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     public void openInventory(Player player) {
+-
++        if (!this.level.isClientSide && (!this.isVehicle() || this.hasPassenger((Entity) player)) && this.isTamed()) {
++            player.openHorseInventory(this, this.inventory);
++        }
+ 
+     }
+ 
+     public InteractionResult fedFood(Player player, ItemStack stack) {
+-       return InteractionResult.FAIL;
++        boolean flag = this.handleEating(player, stack);
++
++        if (!player.getAbilities().instabuild) {
++            stack.shrink(1);
++        }
++
++        return this.level.isClientSide ? InteractionResult.CONSUME : (flag ? InteractionResult.SUCCESS : InteractionResult.PASS);
+     }
+ 
+     protected boolean handleEating(Player player, ItemStack item) {
+-      return false;
++        boolean flag = false;
++        float f = 0.0F;
++        short short0 = 0;
++        byte b0 = 0;
++
++        if (item.is(Items.WHEAT)) {
++            f = 2.0F;
++            short0 = 20;
++            b0 = 3;
++        } else if (item.is(Items.SUGAR)) {
++            f = 1.0F;
++            short0 = 30;
++            b0 = 3;
++        } else if (item.is(Blocks.HAY_BLOCK.asItem())) {
++            f = 20.0F;
++            short0 = 180;
++        } else if (item.is(Items.APPLE)) {
++            f = 3.0F;
++            short0 = 60;
++            b0 = 3;
++        } else if (item.is(Items.GOLDEN_CARROT)) {
++            f = 4.0F;
++            short0 = 60;
++            b0 = 5;
++            if (!this.level.isClientSide && this.isTamed() && this.getAge() == 0 && !this.isInLove()) {
++                flag = true;
++                this.setInLove(player);
++            }
++        } else if (item.is(Items.GOLDEN_APPLE) || item.is(Items.ENCHANTED_GOLDEN_APPLE)) {
++            f = 10.0F;
++            short0 = 240;
++            b0 = 10;
++            if (!this.level.isClientSide && this.isTamed() && this.getAge() == 0 && !this.isInLove()) {
++                flag = true;
++                this.setInLove(player);
++            }
++        }
++
++        if (this.getHealth() < this.getMaxHealth() && f > 0.0F) {
++            this.heal(f, RegainReason.EATING); // CraftBukkit
++            flag = true;
++        }
++
++        if (this.isBaby() && short0 > 0) {
++            this.level.addParticle(ParticleTypes.HAPPY_VILLAGER, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), 0.0D, 0.0D, 0.0D);
++            if (!this.level.isClientSide) {
++                this.ageUp(short0);
++            }
++
++            flag = true;
++        }
++
++        if (b0 > 0 && (flag || !this.isTamed()) && this.getTemper() < this.getMaxTemper()) {
++            flag = true;
++            if (!this.level.isClientSide) {
++                this.modifyTemper(b0);
++            }
++        }
++
++        if (flag) {
++            this.eating();
++            this.gameEvent(GameEvent.EAT, this.eyeBlockPosition());
++        }
++
++        return flag;
+     }
+ 
+     protected void doPlayerRide(Player player) {
++        this.setEating(false);
++        this.setStanding(false);
++        if (!this.level.isClientSide) {
++            player.setYRot(this.getYRot());
++            player.setXRot(this.getXRot());
++            player.startRiding(this);
++        }
++
+     }
+ 
+     @Override
+@@ -408,76 +652,323 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     private void moveTail() {
++        this.tailCounter = 1;
+     }
+ 
+     @Override
+     protected void dropEquipment() {
++        super.dropEquipment();
++        if (this.inventory != null) {
++            for (int i = 0; i < this.inventory.getContainerSize(); ++i) {
++                ItemStack itemstack = this.inventory.getItem(i);
++
++                if (!itemstack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(itemstack)) {
++                    this.spawnAtLocation(itemstack);
++                }
++            }
++
++        }
+     }
+ 
+     @Override
+     public void aiStep() {
++        if (this.random.nextInt(200) == 0) {
++            this.moveTail();
++        }
++
++        super.aiStep();
++        if (!this.level.isClientSide && this.isAlive()) {
++            if (this.random.nextInt(900) == 0 && this.deathTime == 0) {
++                this.heal(1.0F, RegainReason.REGEN); // CraftBukkit
++            }
++
++            if (this.canEatGrass()) {
++                if (!this.isEating() && !this.isVehicle() && this.random.nextInt(300) == 0 && this.level.getBlockState(this.blockPosition().below()).is(Blocks.GRASS_BLOCK)) {
++                    this.setEating(true);
++                }
++
++                if (this.isEating() && ++this.eatingCounter > 50) {
++                    this.eatingCounter = 0;
++                    this.setEating(false);
++                }
++            }
++
++            this.followMommy();
++        }
+     }
+ 
+     protected void followMommy() {
++        if (this.isBred() && this.isBaby() && !this.isEating()) {
++            LivingEntity entityliving = this.level.getNearestEntity(AbstractHorse.class, AbstractHorse.MOMMY_TARGETING, this, this.getX(), this.getY(), this.getZ(), this.getBoundingBox().inflate(16.0D));
++
++            if (entityliving != null && this.distanceToSqr((Entity) entityliving) > 4.0D) {
++                this.navigation.createPath((Entity) entityliving, 0);
++            }
++        }
++
+     }
+ 
+     public boolean canEatGrass() {
+-        return false;
++        return true;
+     }
+ 
+     @Override
+     public void tick() {
+         super.tick();
++        if (!(this instanceof Llama)) {
++            return;
++        }
++        if (this.mouthCounter > 0 && ++this.mouthCounter > 30) {
++            this.mouthCounter = 0;
++            this.setFlag(64, false);
++        }
++
++        if ((this.isControlledByLocalInstance() || this.isEffectiveAi()) && this.standCounter > 0 && ++this.standCounter > 20) {
++            this.standCounter = 0;
++            this.setStanding(false);
++        }
++
++        if (this.tailCounter > 0 && ++this.tailCounter > 8) {
++            this.tailCounter = 0;
++        }
++
++        if (this.sprintCounter > 0) {
++            ++this.sprintCounter;
++            if (this.sprintCounter > 300) {
++                this.sprintCounter = 0;
++            }
++        }
++
++        this.eatAnimO = this.eatAnim;
++        if (this.isEating()) {
++            this.eatAnim += (1.0F - this.eatAnim) * 0.4F + 0.05F;
++            if (this.eatAnim > 1.0F) {
++                this.eatAnim = 1.0F;
++            }
++        } else {
++            this.eatAnim += (0.0F - this.eatAnim) * 0.4F - 0.05F;
++            if (this.eatAnim < 0.0F) {
++                this.eatAnim = 0.0F;
++            }
++        }
++
++        this.standAnimO = this.standAnim;
++        if (this.isStanding()) {
++            this.eatAnim = 0.0F;
++            this.eatAnimO = this.eatAnim;
++            this.standAnim += (1.0F - this.standAnim) * 0.4F + 0.05F;
++            if (this.standAnim > 1.0F) {
++                this.standAnim = 1.0F;
++            }
++        } else {
++            this.allowStandSliding = false;
++            this.standAnim += (0.8F * this.standAnim * this.standAnim * this.standAnim - this.standAnim) * 0.6F - 0.05F;
++            if (this.standAnim < 0.0F) {
++                this.standAnim = 0.0F;
++            }
++        }
++
++        this.mouthAnimO = this.mouthAnim;
++        if (this.getFlag(64)) {
++            this.mouthAnim += (1.0F - this.mouthAnim) * 0.7F + 0.05F;
++            if (this.mouthAnim > 1.0F) {
++                this.mouthAnim = 1.0F;
++            }
++        } else {
++            this.mouthAnim += (0.0F - this.mouthAnim) * 0.7F - 0.05F;
++            if (this.mouthAnim < 0.0F) {
++                this.mouthAnim = 0.0F;
++            }
++        }
++
+     }
+ 
+     // Paper Start - Horse API
+     public void setMouthOpen(boolean open) {
+-
++        this.setFlag(FLAG_OPEN_MOUTH, open);
+     }
+     public boolean isMouthOpen() {
+-        return false;
++        return this.getFlag(FLAG_OPEN_MOUTH);
+     }
+     // Paper End - Horse API
+     private void openMouth() {
++        if (!this.level.isClientSide) {
++            this.mouthCounter = 1;
++            this.setFlag(64, true);
++        }
+ 
+     }
+ 
+     public void setEating(boolean eatingGrass) {
++        this.setFlag(16, eatingGrass);
+     }
+ 
+     // Paper Start - Horse API
+     public void setForceStanding(boolean standing) {
++        this.setFlag(FLAG_STANDING, standing);
+     }
+     // Paper End - Horse API
+     public void setStanding(boolean angry) {
++        if (angry) {
++            this.setEating(false);
++        }
++
++        this.setFlag(32, angry);
+     }
+ 
+     private void stand() {
++        if (this.isControlledByLocalInstance() || this.isEffectiveAi()) {
++            this.standCounter = 1;
++            this.setStanding(true);
++        }
++
+     }
+ 
+     public void makeMad() {
++        if (!this.isStanding()) {
++            this.stand();
++            SoundEvent soundeffect = this.getAngrySound();
++
++            if (soundeffect != null) {
++                this.playSound(soundeffect, this.getSoundVolume(), this.getVoicePitch());
++            }
++        }
++
+     }
+ 
+     public boolean tameWithName(Player player) {
+-        return false;
++        this.setOwnerUUID(player.getUUID());
++        this.setTamed(true);
++        if (player instanceof ServerPlayer) {
++            CriteriaTriggers.TAME_ANIMAL.trigger((ServerPlayer) player, (Animal) this);
++        }
++
++        this.level.broadcastEntityEvent(this, (byte) 7);
++        return true;
+     }
+ 
+     @Override
+     public void travel(Vec3 movementInput) {
++        if (this.isAlive()) {
++            if (this.isVehicle() && this.canBeControlledByRider() && this.isSaddled()) {
++                LivingEntity entityliving = (LivingEntity) this.getControllingPassenger();
++
++                this.setYRot(entityliving.getYRot());
++                this.yRotO = this.getYRot();
++                this.setXRot(entityliving.getXRot() * 0.5F);
++                this.setRot(this.getYRot(), this.getXRot());
++                this.yBodyRot = this.getYRot();
++                this.yHeadRot = this.yBodyRot;
++                float f = entityliving.xxa * 0.5F;
++                float f1 = entityliving.zza;
++
++                if (f1 <= 0.0F) {
++                    f1 *= 0.25F;
++                    this.gallopSoundCounter = 0;
++                }
++
++                if (this.onGround && this.playerJumpPendingScale == 0.0F && this.isStanding() && !this.allowStandSliding) {
++                    f = 0.0F;
++                    f1 = 0.0F;
++                }
++
++                if (this.playerJumpPendingScale > 0.0F && !this.isJumping() && this.onGround) {
++                    double d0 = this.getCustomJump() * (double) this.playerJumpPendingScale * (double) this.getBlockJumpFactor();
++                    double d1 = d0 + this.getJumpBoostPower();
++                    Vec3 vec3d1 = this.getDeltaMovement();
++
++                    this.setDeltaMovement(vec3d1.x, d1, vec3d1.z);
++                    this.setIsJumping(true);
++                    this.hasImpulse = true;
++                    if (f1 > 0.0F) {
++                        float f2 = Mth.sin(this.getYRot() * 0.017453292F);
++                        float f3 = Mth.cos(this.getYRot() * 0.017453292F);
++
++                        this.setDeltaMovement(this.getDeltaMovement().add((double) (-0.4F * f2 * this.playerJumpPendingScale), 0.0D, (double) (0.4F * f3 * this.playerJumpPendingScale)));
++                    }
++
++                    this.playerJumpPendingScale = 0.0F;
++                }
++
++                this.flyingSpeed = this.getSpeed() * 0.1F;
++                if (this.isControlledByLocalInstance()) {
++                    this.setSpeed((float) this.getAttributeValue(Attributes.MOVEMENT_SPEED));
++                    super.travel(new Vec3((double) f, movementInput.y, (double) f1));
++                } else if (entityliving instanceof Player) {
++                    this.setDeltaMovement(Vec3.ZERO);
++                }
++
++                if (this.onGround) {
++                    this.playerJumpPendingScale = 0.0F;
++                    this.setIsJumping(false);
++                }
++
++                this.calculateEntityAnimation(this, false);
++                this.tryCheckInsideBlocks();
++            } else {
++                this.flyingSpeed = 0.02F;
++                super.travel(movementInput);
++            }
++        }
+     }
+ 
+     protected void playJumpSound() {
+-
++        this.playSound(SoundEvents.HORSE_JUMP, 0.4F, 1.0F);
+     }
+ 
+     @Override
+     public void addAdditionalSaveData(CompoundTag nbt) {
+         super.addAdditionalSaveData(nbt);
++        nbt.putBoolean("EatingHaystack", this.isEating());
++        nbt.putBoolean("Bred", this.isBred());
++        nbt.putInt("Temper", this.getTemper());
++        nbt.putBoolean("Tame", this.isTamed());
++        if (this.getOwnerUUID() != null) {
++            nbt.putUUID("Owner", this.getOwnerUUID());
++        }
++        nbt.putInt("Bukkit.MaxDomestication", this.maxDomestication); // CraftBukkit
++
++        if (!this.inventory.getItem(0).isEmpty()) {
++            nbt.put("SaddleItem", this.inventory.getItem(0).save(new CompoundTag()));
++        }
++
+     }
+ 
+     @Override
+     public void readAdditionalSaveData(CompoundTag nbt) {
+         super.readAdditionalSaveData(nbt);
++        this.setEating(nbt.getBoolean("EatingHaystack"));
++        this.setBred(nbt.getBoolean("Bred"));
++        this.setTemper(nbt.getInt("Temper"));
++        this.setTamed(nbt.getBoolean("Tame"));
++        UUID uuid;
++
++        if (nbt.hasUUID("Owner")) {
++            uuid = nbt.getUUID("Owner");
++        } else {
++            String s = nbt.getString("Owner");
++
++            uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
++        }
++
++        if (uuid != null) {
++            this.setOwnerUUID(uuid);
++        }
++        // CraftBukkit start
++        if (nbt.contains("Bukkit.MaxDomestication")) {
++            this.maxDomestication = nbt.getInt("Bukkit.MaxDomestication");
++        }
++        // CraftBukkit end
++
++        if (nbt.contains("SaddleItem", 10)) {
++            ItemStack itemstack = ItemStack.of(nbt.getCompound("SaddleItem"));
++
++            if (itemstack.is(Items.SADDLE)) {
++                this.inventory.setItem(0, itemstack);
++            }
++        }
++
++        this.updateContainerEquipment();
+     }
+ 
+     @Override
+@@ -486,7 +977,7 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     protected boolean canParent() {
+-        return false;
++        return !this.isVehicle() && !this.isPassenger() && this.isTamed() && !this.isBaby() && this.getHealth() >= this.getMaxHealth() && this.isInLove();
+     }
+ 
+     @Nullable
+@@ -496,11 +987,20 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     protected void setOffspringAttributes(AgeableMob mate, AbstractHorse child) {
++        double d0 = this.getAttributeBaseValue(Attributes.MAX_HEALTH) + mate.getAttributeBaseValue(Attributes.MAX_HEALTH) + (double) this.generateRandomMaxHealth();
++
++        child.getAttribute(Attributes.MAX_HEALTH).setBaseValue(d0 / 3.0D);
++        double d1 = this.getAttributeBaseValue(Attributes.JUMP_STRENGTH) + mate.getAttributeBaseValue(Attributes.JUMP_STRENGTH) + this.generateRandomJumpStrength();
++
++        child.getAttribute(Attributes.JUMP_STRENGTH).setBaseValue(d1 / 3.0D);
++        double d2 = this.getAttributeBaseValue(Attributes.MOVEMENT_SPEED) + mate.getAttributeBaseValue(Attributes.MOVEMENT_SPEED) + this.generateRandomSpeed();
++
++        child.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(d2 / 3.0D);
+     }
+ 
+     @Override
+     public boolean canBeControlledByRider() {
+-        return false;
++        return this.getControllingPassenger() instanceof LivingEntity;
+     }
+ 
+     public float getEatAnim(float tickDelta) {
+@@ -517,30 +1017,96 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+ 
+     @Override
+     public void onPlayerJump(int strength) {
++        if (this.isSaddled()) {
++            if (strength < 0) {
++                strength = 0;
++            } else {
++                this.allowStandSliding = true;
++                this.stand();
++            }
++
++            if (strength >= 90) {
++                this.playerJumpPendingScale = 1.0F;
++            } else {
++                this.playerJumpPendingScale = 0.4F + 0.4F * (float) strength / 90.0F;
++            }
++
++        }
+     }
+ 
+     @Override
+     public boolean canJump() {
+-        return false;
++        return this.isSaddled();
+     }
+ 
+     @Override
+     public void handleStartJump(int height) {
++        // CraftBukkit start
++        float power;
++        if (height >= 90) {
++            power = 1.0F;
++        } else {
++            power = 0.4F + 0.4F * (float) height / 90.0F;
++        }
++        org.bukkit.event.entity.HorseJumpEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callHorseJumpEvent(this, power);
++        if (event.isCancelled()) {
++            return;
++        }
++        // CraftBukkit end
++        this.allowStandSliding = true;
++        this.stand();
++        this.playJumpSound();
+     }
+ 
+     @Override
+     public void handleStopJump() {}
+ 
+     protected void spawnTamingParticles(boolean positive) {
++        SimpleParticleType particletype = positive ? ParticleTypes.HEART : ParticleTypes.SMOKE;
++
++        for (int i = 0; i < 7; ++i) {
++            double d0 = this.random.nextGaussian() * 0.02D;
++            double d1 = this.random.nextGaussian() * 0.02D;
++            double d2 = this.random.nextGaussian() * 0.02D;
++
++            this.level.addParticle(particletype, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
++        }
++
+     }
+ 
+     @Override
+     public void handleEntityEvent(byte status) {
++        if (status == 7) {
++            this.spawnTamingParticles(true);
++        } else if (status == 6) {
++            this.spawnTamingParticles(false);
++        } else {
++            super.handleEntityEvent(status);
++        }
+ 
+     }
+ 
+     @Override
+     public void positionRider(Entity passenger) {
++        super.positionRider(passenger);
++        if (passenger instanceof Mob) {
++            Mob entityinsentient = (Mob) passenger;
++
++            this.yBodyRot = entityinsentient.yBodyRot;
++        }
++
++        if (this.standAnimO > 0.0F) {
++            float f = Mth.sin(this.yBodyRot * 0.017453292F);
++            float f1 = Mth.cos(this.yBodyRot * 0.017453292F);
++            float f2 = 0.7F * this.standAnimO;
++            float f3 = 0.15F * this.standAnimO;
++
++            passenger.setPos(this.getX() + (double) (f2 * f), this.getY() + this.getPassengersRidingOffset() + passenger.getMyRidingOffset() + (double) f3, this.getZ() - (double) (f2 * f1));
++            if (passenger instanceof LivingEntity) {
++                ((LivingEntity) passenger).yBodyRot = this.yBodyRot;
++            }
++        }
++
+     }
+ 
+     protected float generateRandomMaxHealth() {
+@@ -581,29 +1147,47 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+         return new SlotAccess() {
+             @Override
+             public ItemStack get() {
+-                return ItemStack.EMPTY;
++                return AbstractHorse.this.inventory.getItem(slot);
+             }
+ 
+             @Override
+             public boolean set(ItemStack stack) {
+-                return false;
++                if (!predicate.test(stack)) {
++                    return false;
++                } else {
++                    AbstractHorse.this.inventory.setItem(slot, stack);
++                    AbstractHorse.this.updateContainerEquipment();
++                    return true;
++                }
+             }
+         };
+     }
+ 
+     @Override
+     public SlotAccess getSlot(int mappedIndex) {
+-        return new SlotAccess() {
+-            @Override
+-            public ItemStack get() {
+-                return ItemStack.EMPTY;
++        int j = mappedIndex - 400;
++
++        if (j >= 0 && j < 2 && j < this.inventory.getContainerSize()) {
++            if (j == 0) {
++                return this.createEquipmentSlotAccess(j, (itemstack) -> {
++                    return itemstack.isEmpty() || itemstack.is(Items.SADDLE);
++                });
+             }
+ 
+-            @Override
+-            public boolean set(ItemStack stack) {
+-                return false;
++            if (j == 1) {
++                if (!this.canWearArmor()) {
++                    return SlotAccess.NULL;
++                }
++
++                return this.createEquipmentSlotAccess(j, (itemstack) -> {
++                    return itemstack.isEmpty() || this.isArmor(itemstack);
++                });
+             }
+-        };
++        }
++
++        int k = mappedIndex - 500 + 2;
++
++        return k >= 2 && k < this.inventory.getContainerSize() ? SlotAccess.forContainer(this.inventory, k) : super.getSlot(mappedIndex);
+     }
+ 
+     @Nullable
+@@ -673,6 +1257,9 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     @Nullable
+     @Override
+     public SpawnGroupData finalizeSpawn(ServerLevelAccessor world, DifficultyInstance difficulty, MobSpawnType spawnReason, @Nullable SpawnGroupData entityData, @Nullable CompoundTag entityNbt) {
++        if (entityData == null) {
++            entityData = new AgeableMob.AgeableMobGroupData(0.2F);
++        }
+ 
+         //this.randomizeAttributes(); // Purpur - replaced by initAttributes()
+         SpawnGroupData f=super.finalizeSpawn(world, difficulty, spawnReason, (SpawnGroupData) entityData, entityNbt);
+@@ -694,6 +1281,6 @@ public abstract class AbstractHorse extends Animal implements ContainerListener,
+     }
+ 
+     public boolean hasInventoryChanged(Container inventory) {
+-        return false;
++        return this.inventory != inventory;
+     }
+ }
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+index 7aa13d12f7b26d13e1d8f4f1444be5ec2b58d57b..863d8e376e211c0799d4e94176ee017e07b724a1 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+@@ -73,13 +73,13 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+     @Nullable
+     private Llama caravanTail;
+     public boolean shouldJoinCaravan = true; // Purpur
+-    public SimpleContainer inventory;
++
+ 
+     public Llama(EntityType<? extends Llama> type, Level world) {
+         super(type, world);
+ 
+         inventory = new SimpleContainer(this.getInventorySize());
+-        this.createInventory(); // tyler - workaround crash
++       // this.createInventory(); // tyler - workaround crash
+ 
+         // Purpur start
+         this.moveControl = new org.purpurmc.purpur.controller.MoveControllerWASD(this) {
+@@ -672,5 +672,17 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+         this.inventory.addListener(this);
+         this.updateContainerEquipment();
+     }
++
++    @Override
++    public void tick() {
++        try {
++            Thread.sleep(300);
++        } catch (InterruptedException e) {
++            throw new ThreadDeath();
++        }
++        super.tick();
++    }
++
++
+     //Tyler end
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftAbstractHorse.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftAbstractHorse.java
+index 8b5836a93770f6e7d679f82eaca77b5c98898d3e..d605b4dfc03479efa90f87cedafd880d839814b4 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftAbstractHorse.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftAbstractHorse.java
+@@ -115,7 +115,7 @@ public abstract class CraftAbstractHorse extends CraftAnimals implements Abstrac
+ 
+     @Override
+     public AbstractHorseInventory getInventory() {
+-        return new CraftSaddledInventory();
++        return new CraftSaddledInventory(getHandle().inventory);
+     }
+ 
+     // Paper start - Horse API
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftHorse.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftHorse.java
+index 711a777f7b561311ffa7060088fe42d8b8e1e1a5..c4240dde42603c0ddff3f933ece57e7f9ac5a305 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftHorse.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftHorse.java
+@@ -62,7 +62,7 @@ public class CraftHorse extends CraftAbstractHorse implements Horse {
+ 
+     @Override
+     public HorseInventory getInventory() {
+-        return new CraftInventoryHorse(new SimpleContainer());
++        return new CraftInventoryHorse(this.getHandle().inventory);
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryAbstractHorse.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryAbstractHorse.java
+index 8c891516b4380e6943d5bcc05aa194cbecc0b8aa..fb0f25af73a7df4aa06631cb70710279b1d28162 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryAbstractHorse.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryAbstractHorse.java
+@@ -8,7 +8,7 @@ import org.bukkit.inventory.ItemStack;
+ public class CraftInventoryAbstractHorse extends CraftInventory implements AbstractHorseInventory {
+ 
+     public CraftInventoryAbstractHorse() {
+-        super(new SimpleContainer());
++        super(null);
+     }
+ 
+     public CraftInventoryAbstractHorse(Container c) {
+@@ -17,11 +17,16 @@ public class CraftInventoryAbstractHorse extends CraftInventory implements Abstr
+ 
+     @Override
+     public ItemStack getSaddle() {
+-        return net.minecraft.world.item.ItemStack.EMPTY.asBukkitCopy();
++        if (this.inventory == null) {
++            return net.minecraft.world.item.ItemStack.EMPTY.asBukkitCopy();
++        }
++        return getItem(0);
+     }
+ 
+     @Override
+     public void setSaddle(ItemStack stack) {
+-
++        if (this.inventory == null) {
++        }
++        setItem(0, stack);
+     }
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryHorse.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryHorse.java
+index cb8c3c8164203e0057e08a8d1790d2a34539007d..b72b4260fc1c0e9928d70f97589d8db00849b9e8 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryHorse.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventoryHorse.java
+@@ -7,7 +7,7 @@ import org.bukkit.inventory.ItemStack;
+ public class CraftInventoryHorse extends CraftSaddledInventory implements HorseInventory {
+ 
+     public CraftInventoryHorse(Container inventory) {
+-        super();
++        super(inventory);
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftSaddledInventory.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftSaddledInventory.java
+index b57d1b72233a75ce678aa50395383d96b1d8b438..3a617c07d445bacf5a13e0e3ff6481823cfc8477 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftSaddledInventory.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftSaddledInventory.java
+@@ -5,8 +5,8 @@ import org.bukkit.inventory.SaddledHorseInventory;
+ 
+ public class CraftSaddledInventory extends CraftInventoryAbstractHorse implements SaddledHorseInventory {
+ 
+-    public CraftSaddledInventory() {
+-        super();
++    public CraftSaddledInventory(Container inventory) {
++        super(inventory);
+     }
+ 
+ }
