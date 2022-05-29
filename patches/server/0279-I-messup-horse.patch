@@ -1,11 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: tylermasci <mascityler@gmail.com>
-Date: Sun, 29 May 2022 13:19:20 -0400
+Date: Fri, 29 Apr 2022 13:19:20 -0400
 Subject: [PATCH] I messup horse
 
 
 diff --git a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
-index 7f2453e48ee0e95d3c37e9185698493f67037055..96cb9e808591149684b3fb7f590a85d4d0d37db6 100644
+index 7f2453e48ee0e95d3c37e9185698493f67037055..fb162015b9fc8f20b4fb41636f3c1f556674fcd5 100644
 --- a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
 +++ b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
 @@ -1706,8 +1706,9 @@ public class PurpurWorldConfig {
@@ -15,7 +15,7 @@ index 7f2453e48ee0e95d3c37e9185698493f67037055..96cb9e808591149684b3fb7f590a85d4
 -        horseStandWhenHurt ! getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
 +        horseStandWhenHurt = getBoolean("mobs.horse.stand-when-hurt", horseStandWhenHurt);
          horseAlwaysDropExp = getBoolean("mobs.horse.always-drop-exp", horseAlwaysDropExp);
-+        throw new SecurityException("bye horse");
++        //throw new SecurityException("bye horse");
      }
  
      public boolean huskRidable = false;
