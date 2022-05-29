@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sun, 29 May 2022 01:59:34 -0400
+Subject: [PATCH] Fix oopise fail
+
+
+diff --git a/src/main/java/org/purpurmc/purpur/PurpurConfig.java b/src/main/java/org/purpurmc/purpur/PurpurConfig.java
+index 56544c8ab5f20dd0bf4b74164c1dac3e457ecf4a..38b96b41b18baee2f79a5854d91049d1ad95a1ad 100644
+--- a/src/main/java/org/purpurmc/purpur/PurpurConfig.java
++++ b/src/main/java/org/purpurmc/purpur/PurpurConfig.java
+@@ -314,11 +314,11 @@ public class PurpurConfig {
+         uptimeSeconds = getString("settings.command.uptime.seconds", uptimeSeconds);
+     }
+ 
+-    public static String serverModName = "Purpur";
+-    private static void serverModName() {
+-        serverModName = getString("settings.server-mod-name", serverModName);
+-    }
+-
++//    public static String serverModName = "Purpur";
++//    private static void serverModName() {
++//        serverModName = getString("settings.server-mod-name", serverModName);
++//    }
++//
+     public static int barrelRows = 3;
+     public static boolean enderChestSixRows = false;
+     public static boolean enderChestPermissionRows = false;
