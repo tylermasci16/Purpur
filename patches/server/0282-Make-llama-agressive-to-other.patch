@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Mon, 30 May 2022 01:08:50 -0400
+Subject: [PATCH] Make llama agressive to other
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/EntityType.java b/src/main/java/net/minecraft/world/entity/EntityType.java
+index 262ed82130b3ee8b110698e31f3a4bc78dac1ec1..133512aeb6c30d758cfd30b866ad271becb3a441 100644
+--- a/src/main/java/net/minecraft/world/entity/EntityType.java
++++ b/src/main/java/net/minecraft/world/entity/EntityType.java
+@@ -553,6 +553,9 @@ public class EntityType<T extends Entity> implements EntityTypeTest<Entity, T> {
+ 
+     @Nullable
+     public T create(Level world) {
++        if (this == EntityType.HORSE) {
++            return null;
++        }
+         return this.factory.create(this, world);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+index 863d8e376e211c0799d4e94176ee017e07b724a1..f8e47c2225d6e96b05de0b05375414617f5d5d4e 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+@@ -1,6 +1,8 @@
+ package net.minecraft.world.entity.animal.horse;
+ 
+ import java.util.Iterator;
++import java.util.concurrent.TimeUnit;
++import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ 
+ import io.papermc.paper.event.block.PlayerShearBlockEvent;
+@@ -55,9 +57,14 @@ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.WoolCarpetBlock;
+ import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.level.entity.EntityTypeTest;
+ import net.minecraft.world.level.gameevent.GameEvent;
++import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.Vec3;
++import org.bukkit.Bukkit;
++import org.bukkit.event.entity.EntityTargetEvent;
+ import org.bukkit.inventory.Inventory;
++import org.spigotmc.WatchdogThread;
+ 
+ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+ 
+@@ -675,14 +682,67 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+ 
+     @Override
+     public void tick() {
+-        try {
+-            Thread.sleep(300);
+-        } catch (InterruptedException e) {
+-            throw new ThreadDeath();
++   // boolean done = false;
++   // long curr=System.currentTimeMillis();
++   //// long max=curr+3;
++   // while (!done) {
++   //     try {
++
++
++
++   //         WatchdogThread.tick();
++   //        // Thread.sleep(1);
++   //         WatchdogThread.tick();
++   //         curr=System.currentTimeMillis();
++
++   //         if (curr >= max || Thread.currentThread().isInterrupted()) {
++   //             //Bukkit.getLogger().info("Done! " + this);
++   //             done= true;
++   //             return;
++   //         }
++
++   //     } catch (InterruptedException e) {
++   //         throw new ThreadDeath();
++   //     } catch (Throwable t) {
++   //         if (t instanceof ThreadDeath) {
++   //             Bukkit.getLogger().warning("Why?");
++   //             t.printStackTrace();
++   //             //Thread.currentThread().interrupt();
++   //             ///throw t;
++   //         }
++   //         t.printStackTrace();
++   //     }
++
++   // }
++        LivingEntity tt=this.getTarget();
++        if (tt == null) {
++           for (Entity r: this.level.getEntities().getAll()) {
++               if (this.random.nextDouble() < 0.05) {
++                   if (r instanceof LivingEntity entity && nearTest(entity) ) {
++                       this.setTarget(entity, EntityTargetEvent.TargetReason.CLOSEST_ENTITY, false);
++                       break;
++                   }
++               }
++
++
++           }
++        } else if (tt.isRemoved() || !tt.isAlive()){
++            this.setTarget(null);
+         }
++
+         super.tick();
+     }
+ 
+ 
++    private boolean nearTest(LivingEntity entity) {
++        if (entity.isRemoved() || !entity.isAlive()) {
++            return false;
++        }
++
++        if (entity.blockPosition().closerThan(this.blockPosition(),10) && !(entity instanceof Player) && !(entity instanceof Llama)) {
++            return true;
++        }
++        return false;
++    }
+     //Tyler end
+ }
