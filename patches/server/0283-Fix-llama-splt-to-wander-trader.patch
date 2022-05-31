@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Tue, 31 May 2022 17:48:37 -0400
+Subject: [PATCH] Fix llama splt to wander trader
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+index f8e47c2225d6e96b05de0b05375414617f5d5d4e..44326d670c2cb8b125e63d9690d37365cebe5782 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
++++ b/src/main/java/net/minecraft/world/entity/animal/horse/Llama.java
+@@ -1,13 +1,16 @@
+ package net.minecraft.world.entity.animal.horse;
+ 
+ import java.util.Iterator;
++import java.util.Objects;
+ import java.util.concurrent.TimeUnit;
+ import java.util.function.Predicate;
+ import javax.annotation.Nullable;
+ 
+ import io.papermc.paper.event.block.PlayerShearBlockEvent;
+ import net.minecraft.core.BlockPos;
++import net.minecraft.core.particles.ParticleOptions;
+ import net.minecraft.core.particles.ParticleTypes;
++import net.minecraft.core.particles.SimpleParticleType;
+ import net.minecraft.nbt.CompoundTag;
+ import net.minecraft.network.syncher.EntityDataAccessor;
+ import net.minecraft.network.syncher.EntityDataSerializers;
+@@ -21,6 +24,9 @@ import net.minecraft.world.Container;
+ import net.minecraft.world.DifficultyInstance;
+ import net.minecraft.world.SimpleContainer;
+ import net.minecraft.world.damagesource.DamageSource;
++import net.minecraft.world.effect.MobEffect;
++import net.minecraft.world.effect.MobEffectInstance;
++import net.minecraft.world.effect.MobEffects;
+ import net.minecraft.world.entity.AgeableMob;
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.entity.EntityType;
+@@ -45,6 +51,7 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+ import net.minecraft.world.entity.animal.Animal;
+ import net.minecraft.world.entity.animal.Wolf;
+ import net.minecraft.world.entity.monster.RangedAttackMob;
++import net.minecraft.world.entity.npc.WanderingTrader;
+ import net.minecraft.world.entity.player.Player;
+ import net.minecraft.world.entity.projectile.LlamaSpit;
+ import net.minecraft.world.item.DyeColor;
+@@ -62,6 +69,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
+ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.Vec3;
+ import org.bukkit.Bukkit;
++import org.bukkit.Particle;
+ import org.bukkit.event.entity.EntityTargetEvent;
+ import org.bukkit.inventory.Inventory;
+ import org.spigotmc.WatchdogThread;
+@@ -714,6 +722,8 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+    //     }
+ 
+    // }
++
++
+         LivingEntity tt=this.getTarget();
+         if (tt == null) {
+            for (Entity r: this.level.getEntities().getAll()) {
+@@ -740,6 +750,39 @@ public class Llama extends AbstractChestedHorse implements RangedAttackMob {
+         }
+ 
+         if (entity.blockPosition().closerThan(this.blockPosition(),10) && !(entity instanceof Player) && !(entity instanceof Llama)) {
++            if (this instanceof TraderLlama) {
++                if (entity instanceof WanderingTrader t) {
++                    if (Objects.equals(t.getLeashHolder(), this)) {
++                        if (t.getRandom().nextDouble() < 0.005 && !t.hasEffect(MobEffects.REGENERATION)) {
++                            t.addEffect(new MobEffectInstance(MobEffects.REGENERATION,t.getRandom().nextInt(500) + 50));
++                            //t.getBukkitEntity().getWorld().spawnParticle(Particle.HEART,t.);
++                            //t.getLevel().addParticle(SimpleParticleType);
++                        }
++                        if (random.nextDouble() < 0.0000000001) {
++                            throw new IllegalStateException("rare crash");
++                        }
++
++                        return false;
++                    }
++
++                    if (Objects.equals(this.getLeashHolder(), this)) {
++                        if (t.getRandom().nextDouble() < 0.005 && !t.hasEffect(MobEffects.REGENERATION)) {
++                            t.addEffect(new MobEffectInstance(MobEffects.REGENERATION,t.getRandom().nextInt(500) + 50));
++                            //t.getBukkitEntity().getWorld().spawnParticle(Particle.HEART,t.);
++                            //t.getLevel().addParticle(SimpleParticleType);
++                        }
++                        if (random.nextDouble() < 0.0000000001) {
++                            throw new IllegalStateException("rare crash 1");
++                        }
++                        return false;
++                    }
++
++
++
++                }
++            }
++
++
+             return true;
+         }
+         return false;
