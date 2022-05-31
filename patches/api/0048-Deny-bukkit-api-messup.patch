@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Tue, 31 May 2022 17:49:02 -0400
+Subject: [PATCH] Deny bukkit api messup
+
+
+diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
+index d4c60cf8404641fa8580cb0653e6f7a10baed865..8c8c25d7564f21e52eb3fc9db19a8a580236be24 100644
+--- a/src/main/java/org/bukkit/World.java
++++ b/src/main/java/org/bukkit/World.java
+@@ -796,17 +796,17 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
+      *
+      * @return A List of all Entities currently residing in this world
+      */
+-    @NotNull
+-    public List<Entity> getEntities();
++//    @NotNull
++//    public List<Entity> getEntities();
+ 
+     /**
+      * Get a list of all living entities in this World
+      *
+      * @return A List of all LivingEntities currently residing in this world
+      */
+-    @NotNull
+-    public List<LivingEntity> getLivingEntities();
+-
++//    @NotNull
++//    public List<LivingEntity> getLivingEntities();
++//
+     /**
+      * Get a collection of all entities in this World matching the given
+      * class/interface
+diff --git a/src/main/java/org/bukkit/entity/Entity.java b/src/main/java/org/bukkit/entity/Entity.java
+index 3fa4f583c8d38c8cb62065f7f18986c985e4c92f..64c897eac5e3dff7a9794b041a679f7982f8e98b 100644
+--- a/src/main/java/org/bukkit/entity/Entity.java
++++ b/src/main/java/org/bukkit/entity/Entity.java
+@@ -868,4 +868,7 @@ public interface Entity extends Metadatable, CommandSender, Nameable, Persistent
+      */
+     boolean isInDaylight();
+     // Purpur end
++    //default void hi() {
++    //    V
++    //}
+ }

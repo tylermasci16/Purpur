@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Tue, 31 May 2022 17:49:02 -0400
+Subject: [PATCH] Deny bukkit api messup
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftRegionAccessor.java b/src/main/java/org/bukkit/craftbukkit/CraftRegionAccessor.java
+index e231636403a70f28e7e4bf51542608872234ce94..1553f64d6bc41371a9c84bed72db35c3b4d3806a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftRegionAccessor.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftRegionAccessor.java
+@@ -394,34 +394,36 @@ public abstract class CraftRegionAccessor implements RegionAccessor {
+ 
+     @Override
+     public List<Entity> getEntities() {
+-        List<Entity> list = new ArrayList<Entity>();
+-
+-        this.getNMSEntities().forEach(entity -> {
+-            Entity bukkitEntity = entity.getBukkitEntity();
+-
+-            // Assuming that bukkitEntity isn't null
+-            if (bukkitEntity != null && (!this.isNormalWorld() || bukkitEntity.isValid())) {
+-                list.add(bukkitEntity);
+-            }
+-        });
+-
+-        return list;
++        throw new IllegalArgumentException("nope");
++        //List<Entity> list = new ArrayList<Entity>();
++//
++        //this.getNMSEntities().forEach(entity -> {
++        //    Entity bukkitEntity = entity.getBukkitEntity();
++//
++        //    // Assuming that bukkitEntity isn't null
++        //    if (bukkitEntity != null && (!this.isNormalWorld() || bukkitEntity.isValid())) {
++        //        list.add(bukkitEntity);
++        //    }
++        //});
++//
++        //return list;
+     }
+ 
+     @Override
+     public List<LivingEntity> getLivingEntities() {
+-        List<LivingEntity> list = new ArrayList<LivingEntity>();
+-
+-        this.getNMSEntities().forEach(entity -> {
+-            Entity bukkitEntity = entity.getBukkitEntity();
+-
+-            // Assuming that bukkitEntity isn't null
+-            if (bukkitEntity != null && bukkitEntity instanceof LivingEntity && (!this.isNormalWorld() || bukkitEntity.isValid())) {
+-                list.add((LivingEntity) bukkitEntity);
+-            }
+-        });
+-
+-        return list;
++        throw new SecurityException("no ent ");
++    //    List<LivingEntity> list = new ArrayList<LivingEntity>();
++//
++    //    this.getNMSEntities().forEach(entity -> {
++    //        Entity bukkitEntity = entity.getBukkitEntity();
++//
++    //        // Assuming that bukkitEntity isn't null
++    //        if (bukkitEntity != null && bukkitEntity instanceof LivingEntity && (!this.isNormalWorld() || bukkitEntity.isValid())) {
++    //            list.add((LivingEntity) bukkitEntity);
++    //        }
++    //    });
++//
++    //    return list;
+     }
+ 
+     @Override
