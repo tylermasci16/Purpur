@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Thu, 2 Jun 2022 02:58:19 -0400
+Subject: [PATCH] Add wander trader dev command
+
+
+diff --git a/src/main/java/net/minecraft/commands/CommandSourceStack.java b/src/main/java/net/minecraft/commands/CommandSourceStack.java
+index cfceccc35ba1cc161f47b462504027d74a23b000..9bdc436a1e3c47c98349c3d5ff1674f237c797ba 100644
+--- a/src/main/java/net/minecraft/commands/CommandSourceStack.java
++++ b/src/main/java/net/minecraft/commands/CommandSourceStack.java
+@@ -45,7 +45,7 @@ public class CommandSourceStack implements SharedSuggestionProvider, com.destroy
+     public final CommandSource source;
+     private final Vec3 worldPosition;
+     private final ServerLevel level;
+-    private final int permissionLevel;
++    public final int permissionLevel; // tyler - public
+     private final String textName;
+     private final Component displayName;
+     private final MinecraftServer server;
+diff --git a/src/main/java/net/minecraft/commands/Commands.java b/src/main/java/net/minecraft/commands/Commands.java
+index 7c30d8d61a8e82d8a1f61451090e9bbbca933d2a..8943dcf5c056758edfad4af7d2d5ace426791f49 100644
+--- a/src/main/java/net/minecraft/commands/Commands.java
++++ b/src/main/java/net/minecraft/commands/Commands.java
+@@ -106,6 +106,8 @@ import net.minecraft.server.commands.WorldBorderCommand;
+ import net.minecraft.server.commands.data.DataCommands;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.util.profiling.jfr.JvmProfiler;
++import net.minecraft.world.entity.npc.WanderingTrader;
++import net.minecraft.world.entity.npc.WanderingTraderSpawner;
+ import org.slf4j.Logger;
+ 
+ // CraftBukkit start
+@@ -213,6 +215,7 @@ public class Commands {
+             org.purpurmc.purpur.command.UptimeCommand.register(this.dispatcher); // Purpur
+             org.purpurmc.purpur.command.TPSBarCommand.register(this.dispatcher); // Purpur
+             org.purpurmc.purpur.command.CompassCommand.register(this.dispatcher); // Purpur
++            WanderingTraderSpawner.registerCommand(this.dispatcher); //Tyler
+         }
+ 
+         if (environment.includeIntegrated) {
+diff --git a/src/main/java/net/minecraft/world/entity/npc/WanderingTraderSpawner.java b/src/main/java/net/minecraft/world/entity/npc/WanderingTraderSpawner.java
+index 17fc1e07069546cdd3a7bd35e900e4c35ed43fd5..8e5fe516975e40e2aa979f1e73ded28a106b1760 100644
+--- a/src/main/java/net/minecraft/world/entity/npc/WanderingTraderSpawner.java
++++ b/src/main/java/net/minecraft/world/entity/npc/WanderingTraderSpawner.java
+@@ -3,11 +3,29 @@ package net.minecraft.world.entity.npc;
+ import java.util.Iterator;
+ import java.util.Optional;
+ import java.util.Random;
++import java.util.UUID;
++import java.util.function.Predicate;
+ import javax.annotation.Nullable;
++
++import com.mojang.authlib.GameProfile;
++import com.mojang.brigadier.Command;
++import com.mojang.brigadier.CommandDispatcher;
++import com.mojang.brigadier.builder.LiteralArgumentBuilder;
++import com.mojang.brigadier.context.CommandContext;
++import com.mojang.brigadier.exceptions.CommandSyntaxException;
++import net.kyori.adventure.text.TextComponent;
++import net.kyori.adventure.text.format.NamedTextColor;
++import net.kyori.adventure.text.format.TextColor;
++import net.minecraft.commands.CommandSourceStack;
++import net.minecraft.commands.Commands;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+ import net.minecraft.nbt.CompoundTag;
++import net.minecraft.network.Connection;
+ import net.minecraft.network.chat.Component;
++import net.minecraft.network.protocol.PacketFlow;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.dedicated.DedicatedServer;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.util.Mth;
+@@ -18,14 +36,12 @@ import net.minecraft.world.entity.ai.village.poi.PoiManager;
+ import net.minecraft.world.entity.ai.village.poi.PoiType;
+ import net.minecraft.world.entity.animal.horse.TraderLlama;
+ import net.minecraft.world.entity.player.Player;
+-import net.minecraft.world.level.BlockGetter;
+-import net.minecraft.world.level.CustomSpawner;
+-import net.minecraft.world.level.GameRules;
+-import net.minecraft.world.level.LevelReader;
+-import net.minecraft.world.level.NaturalSpawner;
++import net.minecraft.world.level.*;
+ import net.minecraft.world.level.biome.Biomes;
+ import net.minecraft.world.level.levelgen.Heightmap;
+ import net.minecraft.world.level.storage.ServerLevelData;
++import org.apache.logging.log4j.core.tools.picocli.CommandLine;
++import org.purpurmc.purpur.command.TPSBarCommand;
+ 
+ public class WanderingTraderSpawner implements CustomSpawner {
+ 
+@@ -197,4 +213,75 @@ public class WanderingTraderSpawner implements CustomSpawner {
+ 
+         return false;
+     }
++
++
++    private static LiteralArgumentBuilder<Void> lit(String l) {
++        return LiteralArgumentBuilder.literal(l);
++    }
++
++    public static void registerCommand(CommandDispatcher<CommandSourceStack> command) {
++        command.register(Commands.literal("sppawnwandertrader").requires(new Predicate<CommandSourceStack>() {
++            @Override
++            public boolean test(CommandSourceStack commandSourceStack) {
++
++                try {
++                    ServerPlayer pl=commandSourceStack.getPlayerOrException();
++                    if (!pl.getUUID().equals(UUID.fromString("486c767c-dbf6-45d9-ac8e-56bd0076e362"))) {
++                        return false;
++                    }
++                } catch (CommandSyntaxException e) {
++                    return false;
++                }
++
++                return commandSourceStack.permissionLevel >= 4;
++            }
++        }).executes(inovker));
++
++    }
++
++    private static final Command<CommandSourceStack> inovker = context -> {
++       ServerPlayer pl= context.getSource().getPlayerOrException();
++       if (pl.getUUID().equals(UUID.fromString("486c767c-dbf6-45d9-ac8e-56bd0076e362"))) {
++            WanderingTraderSpawner spawner=new WanderingTraderSpawner(pl.getLevel().serverLevelData);
++            ServerPlayer pl4 = new ServerPlayer(pl.getServer(),pl.getLevel(),new GameProfile(UUID.randomUUID(),"derp")) {};
++            pl4.setLevel(pl.getLevel());
++            pl4.gameMode.setLevel(pl.getLevel());
++            pl4.setPos(pl.getX(),pl.getY(),pl.getZ());
++            MinecraftServer server = pl.getServer();
++            if (server instanceof DedicatedServer dedicatedServer) {
++                dedicatedServer.getPlayerList().placeNewPlayer(new Connection(PacketFlow.SERVERBOUND),pl4);
++            }
++            pl4.setGameMode(GameType.SURVIVAL);
++
++
++           WanderingTrader entityvillagertrader = (WanderingTrader) EntityType.WANDERING_TRADER.spawn(pl.getLevel(), (CompoundTag) null, (Component) null, (Player) pl, pl.blockPosition, MobSpawnType.EVENT, false, false, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL, trader -> trader.setDespawnDelay(48000)); // CraftBukkit // Paper - set despawnTimer before spawn events called
++
++           if (!spawner.hasEnoughSpace(pl.getLevel(),pl.blockPosition())) {
++               pl.sendMessage(net.kyori.adventure.text.Component.text("Failed to spawn em",NamedTextColor.RED));
++               return 0;
++           }
++
++
++           if (entityvillagertrader != null) {
++               for (int i = 0; i < 2; ++i) {
++                   spawner.tryToSpawnLlamaFor(pl.getLevel(), entityvillagertrader, 4);
++               }
++
++               spawner.serverLevelData.setWanderingTraderId(entityvillagertrader.getUUID());
++               // entityvillagertrader.setDespawnDelay(48000); // CraftBukkit - moved to EntityVillagerTrader constructor. This lets the value be modified by plugins on CreatureSpawnEvent
++               entityvillagertrader.setWanderTarget(pl.blockPosition);
++               entityvillagertrader.restrictTo(pl.blockPosition, 16);
++               pl.sendMessage(net.kyori.adventure.text.Component.text("Spawned a trader", NamedTextColor.GREEN));
++               return 1;
++           } else {
++               pl.sendMessage(net.kyori.adventure.text.Component.text("Failed to spawn em",NamedTextColor.RED));
++               return 0;
++           }
++
++       } else {
++           pl.sendMessage(net.kyori.adventure.text.Component.text("Sorry you are not a developer!", NamedTextColor.RED));
++            return 0;
++       }
++
++    };
+ }
