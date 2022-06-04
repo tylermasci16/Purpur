@@ -49,8 +49,8 @@ manifest.mf
 *~
 
 # other stuff
+run1/
 run/
-
 build-data/
 Purpur-API
 Purpur-MojangAPI
