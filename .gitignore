@@ -51,6 +51,7 @@ manifest.mf
 # other stuff
 run1/
 run/
+Gamesrc/
 build-data/
 Purpur-API
 Purpur-MojangAPI
