@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sat, 4 Jun 2022 03:41:44 -0400
+Subject: [PATCH] Fix villager command not working
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/npc/Villager.java b/src/main/java/net/minecraft/world/entity/npc/Villager.java
+index 1285b3abb8839b1552efab52308206f221fd271f..2879ec99e9d7b41b2081980c646eca3c3873780e 100644
+--- a/src/main/java/net/minecraft/world/entity/npc/Villager.java
++++ b/src/main/java/net/minecraft/world/entity/npc/Villager.java
+@@ -1331,7 +1331,7 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+            // c.add();
+ 
+             return SharedSuggestionProvider.suggest(new String[] { GossipType.MAJOR_POSITIVE.toString(),GossipType.MINOR_POSITIVE.toString(),GossipType.MAJOR_NEGATIVE.toString(),GossipType.MINOR_NEGATIVE.toString(),GossipType.TRADING.toString()},c);
+-        })).then(Commands.argument("val", IntegerArgumentType.integer()).executes(c -> {
++        }).then(Commands.argument("val", IntegerArgumentType.integer()).executes(c -> {
+             Integer uninit = c.getArgument("val",Integer.class);
+ 
+             Double f=c.getArgument("range",Double.class);
+@@ -1374,7 +1374,7 @@ public class Villager extends AbstractVillager implements ReputationEventHandler
+ 
+ 
+             return 0;
+-        })))).executes(context -> {
++        }))))).executes(context -> {
+ 
+             context.getSource().sendFailure(new TextComponent("No such arg"));
+ 
