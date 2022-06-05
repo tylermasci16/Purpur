@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sat, 4 Jun 2022 23:26:16 -0400
+Subject: [PATCH] Fix run
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 5cf6df01bb744e696d785617728e25ba418c5a32..9ae2b8f712027965fcb961a1b5a6cbc80b7cf331 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -195,7 +195,7 @@ fun TaskContainer.registerRunTask(
+         systemProperty("disable.watchdog", true)
+     }
+ 
+-    val memoryGb = providers.gradleProperty("paper.runMemoryGb").getOrElse("2")
++    val memoryGb = providers.gradleProperty("paper.runMemoryGb").getOrElse("10") //Tyler - clot fix
+     val modifiedJvmArgs = jvmArgs ?: arrayListOf()
+     modifiedJvmArgs.addAll(listOf("-Xms${memoryGb}G", "-Xmx${memoryGb}G"))
+     jvmArgs = modifiedJvmArgs
