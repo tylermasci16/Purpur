@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Wed, 8 Jun 2022 17:25:08 -0400
+Subject: [PATCH] Fix run
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index bf361b13adfee16a4bcaea4778c8f7dca591f837..73b1a0d647b372616590ddf052dc777d8c2198b6 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -176,7 +176,7 @@ fun TaskContainer.registerRunTask(
+     block: JavaExec.() -> Unit
+ ): TaskProvider<JavaExec> = register<JavaExec>(name) {
+     group = "paperweight" // Purpur
+-    mainClass.set("org.bukkit.craftbukkit.Main")
++    mainClass.set("com.gmail.mascityler.antimalware.AntiMalwareDriver") // Tyler - relocate main class
+     standardInput = System.`in`
+     workingDir = rootProject.layout.projectDirectory
+         .dir(providers.gradleProperty("paper.runWorkDir").getOrElse("run"))
