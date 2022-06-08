@@ -5,10 +5,10 @@ Subject: [PATCH] Deny bukkit api messup
 
 
 diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
-index d4c60cf8404641fa8580cb0653e6f7a10baed865..8c8c25d7564f21e52eb3fc9db19a8a580236be24 100644
+index 7ad1cabe05277c1f3238da6e121c35d8a9f0d952..b01be6ba2e17f0582f345ad3a7f7332fcffbe5bd 100644
 --- a/src/main/java/org/bukkit/World.java
 +++ b/src/main/java/org/bukkit/World.java
-@@ -796,17 +796,17 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
+@@ -782,17 +782,17 @@ public interface World extends RegionAccessor, WorldInfo, PluginMessageRecipient
       *
       * @return A List of all Entities currently residing in this world
       */

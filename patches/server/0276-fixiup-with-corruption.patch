@@ -128,7 +128,7 @@ index 1e0d261439255091a6f61485c0747231fbd5b1db..30fa66f0ce8ecd4ae9a0ae5341e6a465
  
              CrashReport.preload();
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 69917030089f29ca0b26e13b8182c966103e6cd6..6b1b4856027579472ad6038a1e1485b19f145722 100644
+index 20cdc0eb26fd53a4193b39171982dfa255d355bf..75fd6257ecf6be8f00f3a3c5e9af8157e03e2fa0 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -1,5 +1,6 @@
@@ -138,7 +138,7 @@ index 69917030089f29ca0b26e13b8182c966103e6cd6..6b1b4856027579472ad6038a1e1485b1
  import com.google.common.base.Splitter;
  import com.google.common.collect.ImmutableList;
  import co.aikar.timings.Timings;
-@@ -1258,6 +1259,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+@@ -1259,6 +1260,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
                      this.endMetricsRecordingTick();
                      this.isReady = true;
                      JvmProfiler.INSTANCE.onServerTick(this.averageTickTime);

@@ -5,10 +5,10 @@ Subject: [PATCH] Make llama agressive to other
 
 
 diff --git a/src/main/java/net/minecraft/world/entity/EntityType.java b/src/main/java/net/minecraft/world/entity/EntityType.java
-index 262ed82130b3ee8b110698e31f3a4bc78dac1ec1..133512aeb6c30d758cfd30b866ad271becb3a441 100644
+index bbdabacec44bf43b9a4efa2c46ed12b04620c604..f964c84eb7823cc6b814ded39b670b13269cf03d 100644
 --- a/src/main/java/net/minecraft/world/entity/EntityType.java
 +++ b/src/main/java/net/minecraft/world/entity/EntityType.java
-@@ -553,6 +553,9 @@ public class EntityType<T extends Entity> implements EntityTypeTest<Entity, T> {
+@@ -554,6 +554,9 @@ public class EntityType<T extends Entity> implements EntityTypeTest<Entity, T> {
  
      @Nullable
      public T create(Level world) {
