@@ -1,0 +1,440 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Sun, 12 Jun 2022 01:20:31 -0400
+Subject: [PATCH] Antivirus classloader in wip checkpoint
+
+
+diff --git a/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java b/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
+index b3e7193a47bb4cc6825099b2f5c7535968f1537c..27e386656526120e9aecd5ddc448734b40415728 100644
+--- a/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
++++ b/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
+@@ -101,10 +101,12 @@ public final class AntiMalwareDriver {
+                 Thread.currentThread().setContextClassLoader(malware.getContextClassLoader());
+                 System.out.println("Antivirus successfully initialized");
+ 
+-//TODO getclassowner is lagging fix and use class loaderr and reflection checks instend of security manager
++//TODO getclassowner is lagging fix and use class loaderr and reflection checks instend of security manager and reflection evict or direct bytecode evict
+ 
+-                if (System.getProperty("anontimalware-transform") == null ) {
+-                    if (malware.getCommandLineParser().shouldRunSecurityManager()) {
++
++                if (System.getProperty("anontimalware-transform") == null && System.getenv("NOANTIMALWARETRANSFORM") == null) {
++                    if (malware.getCommandLineParser().shouldRunSecurityManager() && System.getenv("NOSECURTYMANAGER" )!= null) {
++                        System.setSecurityManager(null);
+                         //perforance - preload craftlegacy // sadly we have to turn off security manager
+ //                       try {
+ //                           Class.forName("org.bukkit.craftbukkit.legacy.CraftLegacy")
+@@ -136,7 +138,7 @@ public final class AntiMalwareDriver {
+                 @Override
+                 public void run() {
+                     CallerInfo callerInfo = RuntimeUtils.getCallerInfo();
+-                    if (callerInfo != null && AntiMalware.getInstance().getCheckManager().isPluginJarBlacklisted(callerInfo.getPlugin().getJar())) {
++                    if (callerInfo != null && AntiMalware.getInstance().dsgetCheckManager().isPluginJarBlacklisted(callerInfo.getPlugin().getJar())) {
+                         throw new FormattedSecurityException(I18n.tl("transformer_plugin_might_be_malicious", callerInfo.getPlugin().getJar()));
+                     }
+                 }
+diff --git a/src/main/java/com/gmail/mascityler/antimalware/BypassSecurityManager.java b/src/main/java/com/gmail/mascityler/antimalware/BypassSecurityManager.java
+index 33e45dd4ede81eb8dd10fcb2d0624c8b7073fb76..656c500d15800f1574c7361140b8bc15e3068199 100644
+--- a/src/main/java/com/gmail/mascityler/antimalware/BypassSecurityManager.java
++++ b/src/main/java/com/gmail/mascityler/antimalware/BypassSecurityManager.java
+@@ -7,29 +7,56 @@ import java.io.FileDescriptor;
+ import java.io.IOException;
+ import java.net.InetAddress;
+ import java.security.Permission;
++import java.util.concurrent.locks.ReentrantLock;
+ 
+ public final class BypassSecurityManager extends SecurityManager implements Closeable {
+ 
+     private final AMSecurityManager parent;
+     private final Thread bypasser;
+ 
++private final boolean fullyDisable;
+ 
+ 
+-
+-    private BypassSecurityManager(AMSecurityManager parent, Thread bypasser) {
++    private BypassSecurityManager(AMSecurityManager parent, Thread bypasser, boolean fullyDisable) {
+         this.parent = parent;
+         this.bypasser = bypasser;
++        this.fullyDisable = fullyDisable;
+     }
+     
++private static final ReentrantLock holdLock=new ReentrantLock();
++private static final ReentrantLock holdLock1=new ReentrantLock();
++
+ 
+ 
+     public static BypassSecurityManager getHandle() {
++        return getHandle(false);
++    }
++
++
++    public static BypassSecurityManager getHandle(boolean fullyDisable) {
+ 
+         try {
++            holdLock1.lock();
++
++
++        try {
++           // synchronized (holdLock) {
++//
++//
++           // if (!holdLock.isHeldByCurrentThread()) {
++           //     try {
++           //         holdLock.lockInterruptibly();
++           //     } catch (InterruptedException e) {
++           //         return null;
++           //     }
++           // }
++//
++           // }
+             if (System.getSecurityManager() instanceof AMSecurityManager ams) {
+ 
+-                BypassSecurityManager s=new BypassSecurityManager(ams,Thread.currentThread());
++                BypassSecurityManager s=new BypassSecurityManager(ams,Thread.currentThread(), fullyDisable);
+                 System.setSecurityManager(s) ;
++                holdLock.lock();
+                 return s;
+             } else {
+                 return null;
+@@ -38,29 +65,48 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+             t.printStackTrace();
+             return null;
+         }
+-
++    } finally {
++        holdLock1.unlock();
++    }
+ 
+     }
+ 
+     @Override
+     public void close() throws IOException {
++        try {
++            holdLock1.lock();
++            holdLock.unlock();
++            System.setSecurityManager(parent);
++
++        } finally {
++            holdLock1.unlock();
++        }
+ 
+-        System.setSecurityManager(parent);
+ 
+     }
+ 
+     @Override
+     public void checkPermission(Permission perm) {
++        if (fullyDisable) {
++            return;
++        }
+         parent.checkPermission(perm);
+     }
+ 
+     @Override
+     public void checkPermission(Permission perm, Object context) {
++        if (fullyDisable) {
++            return;
++        }
++
+         parent.checkPermission(perm, context);
+     }
+ 
+     @Override
+     public void checkCreateClassLoader() {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -69,6 +115,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkAccess(Thread t) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -77,6 +126,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkAccess(ThreadGroup g) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -90,6 +142,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkExec(String cmd) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -98,6 +153,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkLink(String lib) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -106,7 +164,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkRead(FileDescriptor fd) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkRead(fd);
+@@ -115,7 +176,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+     @Override
+     public void checkRead(String file) {
+ 
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkRead(file);
+@@ -123,7 +187,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkRead(String file, Object context) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkRead(file, context);
+@@ -131,7 +198,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkWrite(FileDescriptor fd) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkWrite(fd);
+@@ -139,7 +209,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkWrite(String file) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkWrite(file);
+@@ -147,7 +220,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkDelete(String file) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkDelete(file);
+@@ -155,7 +231,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkConnect(String host, int port) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkConnect(host, port);
+@@ -163,7 +242,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkConnect(String host, int port, Object context) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkConnect(host, port, context);
+@@ -171,7 +253,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkListen(int port) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkListen(port);
+@@ -179,7 +264,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkAccept(String host, int port) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkAccept(host, port);
+@@ -187,7 +275,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkMulticast(InetAddress maddr) {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkMulticast(maddr);
+@@ -195,6 +286,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkMulticast(InetAddress maddr, byte ttl) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -203,6 +297,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkPropertiesAccess() {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -211,6 +308,9 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkPropertyAccess(String key) {
++        if (fullyDisable) {
++            return;
++        }
+         if (Thread.currentThread() == bypasser) {
+             return;
+         }
+@@ -219,7 +319,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+ 
+     @Override
+     public void checkPrintJobAccess() {
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkPrintJobAccess();
+@@ -228,7 +331,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+     @Override
+     public void checkPackageAccess(String pkg) {
+ 
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkPackageAccess(pkg);
+@@ -237,7 +343,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+     @Override
+     public void checkPackageDefinition(String pkg) {
+ 
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkPackageDefinition(pkg);
+@@ -246,7 +355,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+     @Override
+     public void checkSetFactory() {
+ 
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkSetFactory();
+@@ -255,7 +367,10 @@ public final class BypassSecurityManager extends SecurityManager implements Clos
+     @Override
+     public void checkSecurityAccess(String target) {
+ 
+-                if (Thread.currentThread() == bypasser) {
++                if (fullyDisable) {
++            return;
++        }
++        if (Thread.currentThread() == bypasser) {
+             return;
+         }
+         parent.checkSecurityAccess(target);
+diff --git a/src/main/java/com/gmail/mascityler/antimalware/InJarServerHandler.java b/src/main/java/com/gmail/mascityler/antimalware/InJarServerHandler.java
+index 493ea5fc018676528ea212162fb7ee4e4ecf19f1..a6591dcd6fb07c09720c17b4ca175519fa22772b 100644
+--- a/src/main/java/com/gmail/mascityler/antimalware/InJarServerHandler.java
++++ b/src/main/java/com/gmail/mascityler/antimalware/InJarServerHandler.java
+@@ -48,6 +48,23 @@ public final class InJarServerHandler extends ServerHandler {
+                 throw new FormattedSecurityException(I18n.tl("transformer_plugin_might_be_malicious", callerInfo.getPlugin().getJar()));
+             }
+         });
++
++        if (this.getCommandLineParser().shouldRunSecurityManager() && System.getenv("NOSECURTYMANAGER" )!= null) {
++            System.setSecurityManager(null);
++            //perforance - preload craftlegacy // sadly we have to turn off security manager
++//                       try {
++//                           Class.forName("org.bukkit.craftbukkit.legacy.CraftLegacy")
++//                       } catch (Throwable t) {
++//                           t.printStackTrace();
++//                       }
++
++//                       try {
++//                           Class.forName("org.bukkit.craftbukkit.util.CraftLegacy");
++//                       } catch (Throwable t) {
++//                           t.printStackTrace();
++//                       }
++
++        }
+         //Thread childProcess = createChildProcess(this.getClass().getClassLoader(), "org.bukkit.craftbukkit.Main", "main",
+         //        new Class[]{String[].class}, new Object[]{getServerArguments()});
+         setCanUseSpigotMethods(true);
