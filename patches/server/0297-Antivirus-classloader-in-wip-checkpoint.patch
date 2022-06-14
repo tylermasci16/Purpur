@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tylermasci <mascityler@gmail.com>
+Date: Tue, 14 Jun 2022 15:49:54 -0400
+Subject: [PATCH] Antivirus classloader in wip checkpoint
+
+
+diff --git a/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java b/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
+index 27e386656526120e9aecd5ddc448734b40415728..b5cb6e92cd8e3f076a52fa6df0602b4dbc5b61a8 100644
+--- a/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
++++ b/src/main/java/com/gmail/mascityler/antimalware/AntiMalwareDriver.java
+@@ -8,6 +8,7 @@ import optic_fusion1.antimalware.servers.runtimeprotect.callerinfo.RuntimeUtils;
+ import optic_fusion1.antimalware.servers.transformers.Transformers;
+ import optic_fusion1.antimalware.utils.I18n;
+ import org.bukkit.Bukkit;
++import org.bukkit.craftbukkit.Main;
+ import org.bukkit.craftbukkit.legacy.CraftLegacy;
+ 
+ import java.io.File;
+@@ -16,7 +17,10 @@ import java.util.HashMap;
+ import java.util.concurrent.Callable;
+ 
+ public final class AntiMalwareDriver {
+-
++    public static final boolean NOANTIMALWARE=true;
++    public static final boolean NOSECURITY=true;
++    public static final boolean ALWAYSSECURITY=false;
++    public static final boolean NOTRANSFORM=false;
+     private AntiMalwareDriver() {
+ 
+     }
+@@ -24,7 +28,7 @@ public final class AntiMalwareDriver {
+     private static boolean istransformed=false;
+ 
+     public static void trans() {
+-        if (inst != null && istransformed) {
++        if (!NOANTIMALWARE && inst != null && istransformed) {
+             //Transformers.a(() -> null);
+ 
+             CallerInfo callerInfo = RuntimeUtils.getCallerInfo();
+@@ -37,7 +41,7 @@ public final class AntiMalwareDriver {
+ 
+ 
+     public static void hashmapinterceptor() {
+-        if (inst != null && istransformed) {
++        if (!NOANTIMALWARE && inst != null && istransformed) {
+             CallerInfo callerInfo = RuntimeUtils.getCallerInfo();
+             if (callerInfo != null && AntiMalware.getInstance().getCheckManager().isPluginJarBlacklisted(callerInfo.getPlugin().getJar())) {
+                 throw new FormattedSecurityException(I18n.tl("transformer_plugin_might_be_malicious", new Object[]{callerInfo.getPlugin().getJar()}));
+@@ -46,12 +50,17 @@ public final class AntiMalwareDriver {
+     }
+     private static boolean ran=false;
+     public static void throwIfNotExecuted() {
++        if (!NOANTIMALWARE) {
++
+         if (!ran) {
+             throw new IllegalStateException("Did not invoke main on my driver");
+         }
++        }
+     }
+     public static void main(String[] args) {
+ 
++        if (!NOANTIMALWARE) {
++
+ 
+ 
+         if (ran) {
+@@ -60,7 +69,7 @@ public final class AntiMalwareDriver {
+         ran=true;
+         ClassLoader loader = Thread.currentThread().getContextClassLoader();
+         ClassLoader loader1= AntiMalwareDriver.class.getClassLoader();
+-        if (System.getProperty("noantimalware") == null) {
++        if (System.getProperty("noantimalware") == null && System.getenv("NOANTIMALWARE") == null) {
+             try {
+                 System.out.println("Initializing the antivirus");
+                 String str=null;
+@@ -104,8 +113,8 @@ public final class AntiMalwareDriver {
+ //TODO getclassowner is lagging fix and use class loaderr and reflection checks instend of security manager and reflection evict or direct bytecode evict
+ 
+ 
+-                if (System.getProperty("anontimalware-transform") == null && System.getenv("NOANTIMALWARETRANSFORM") == null) {
+-                    if (malware.getCommandLineParser().shouldRunSecurityManager() && System.getenv("NOSECURTYMANAGER" )!= null) {
++                if (ALWAYSSECURITY || (System.getProperty("anontimalware-transform") == null && System.getenv("NOANTIMALWARETRANSFORM") == null && !NOTRANSFORM)) {
++                    if (!ALWAYSSECURITY && (malware.getCommandLineParser().shouldRunSecurityManager() && (NOSECURITY||System.getenv("NOSECURTYMANAGER" )!= null ))) {
+                         System.setSecurityManager(null);
+                         //perforance - preload craftlegacy // sadly we have to turn off security manager
+ //                       try {
+@@ -121,6 +130,7 @@ public final class AntiMalwareDriver {
+ //                       }
+ 
+                     }
++
+                     istransformed=true;
+                     ServerHandler handler=new InJarServerHandler(args);
+                     handler.setAntiMalware(malware);
+@@ -138,7 +148,7 @@ public final class AntiMalwareDriver {
+                 @Override
+                 public void run() {
+                     CallerInfo callerInfo = RuntimeUtils.getCallerInfo();
+-                    if (callerInfo != null && AntiMalware.getInstance().dsgetCheckManager().isPluginJarBlacklisted(callerInfo.getPlugin().getJar())) {
++                    if (callerInfo != null && AntiMalware.getInstance().getCheckManager().isPluginJarBlacklisted(callerInfo.getPlugin().getJar())) {
+                         throw new FormattedSecurityException(I18n.tl("transformer_plugin_might_be_malicious", callerInfo.getPlugin().getJar()));
+                     }
+                 }
+@@ -153,6 +163,9 @@ public final class AntiMalwareDriver {
+             throw new RuntimeException(e);
+         }
+ 
++        } else {
++            Main.main(args);
++        }
+ 
+     }
+ 
+@@ -160,7 +173,7 @@ public final class AntiMalwareDriver {
+ 
+     public static boolean isEnabled() {
+ 
+-        return inst != null;
++        return !NOANTIMALWARE && inst != null;
+     }
+ 
+ //TODO preload class
